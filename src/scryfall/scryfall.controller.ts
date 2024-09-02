@@ -1,14 +1,54 @@
-import { Controller, Get, Query, HttpException, HttpStatus } from '@nestjs/common';
+import { Controller, Get, Post, Body, Query, HttpException, HttpStatus, UseGuards, Req } from '@nestjs/common';
 import { ScryfallService } from '../services/scryfall/scryfall.service';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
 @Controller('scryfall')
 export class ScryfallController {
   constructor(private readonly scryfallService: ScryfallService) { }
 
-  @Get('search')
-  async searchCard(@Query('q') query: string) {
+   @UseGuards(JwtAuthGuard)
+  @Post('deck')
+  async createDeck(@Body('commanderId') commanderId: string, @Req() req) {
     try {
-      const response = await this.scryfallService.searchCard(query);
+      // Obter o ID do usuário autenticado
+
+      const userId = req.user.userId;
+
+      // Buscar o comandante pelo ID fornecido
+      const commander = await this.scryfallService.getCardById(commanderId);
+      if (!commander || !commander.colors) {
+        throw new HttpException('Comandante não encontrado ou dados inválidos', HttpStatus.NOT_FOUND);
+      }
+
+      // Obter o deck baseado nas cores do comandante
+      const deck = await this.scryfallService.getDeckByCommander(commander.name);
+
+      // Adicionar o comandante ao deck
+      deck.push({
+        name: commander.name,
+        type: commander.type_line,
+        manaCost: commander.mana_cost,
+        colors: commander.colors,
+        imageUrl: commander.image_uris?.normal || null,
+      });
+
+      // Salvar o deck em um arquivo JSON
+      await this.scryfallService.saveDeckToFile(deck);
+
+      // Salvar o deck no MongoDB, associando ao usuário
+      const savedDeck = await this.scryfallService.saveDeckToDatabase(deck, userId, commander.name);
+
+      return savedDeck;
+    } catch (error) {
+      console.error('Erro interno do servidor:', error.message); // Log para depuração
+      throw new HttpException('Erro interno do servidor', HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+  }
+
+  @Get('search')
+  async searchCard(@Query('q') query: string, @Query('page') page: number = 1) {
+    try {
+      const response = await this.scryfallService.searchCard(query, page);
       return response;
     } catch (error) {
       console.error('Erro ao buscar carta:', error); // Log para depuração
@@ -17,10 +57,10 @@ export class ScryfallController {
   }
 
   @Get('commander')
-  async getCommander() {
+  async getCommander(@Query('page') page: number = 1) {
     try {
       const query = 'type:legendary+type:creature'; // Busca por criaturas lendárias
-      const response = await this.scryfallService.searchCard(query);
+      const response = await this.scryfallService.searchCard(query, page);
       return response;
     } catch (error) {
       console.error('Erro ao buscar comandante:', error); // Log para depuração
@@ -37,49 +77,13 @@ export class ScryfallController {
         throw new HttpException('Comandante não encontrado ou dados inválidos', HttpStatus.NOT_FOUND);
       }
 
-      // Obter as cores do comandante e buscar cartas compatíveis
-      const colors = commander.colors.join(',');
-      const deckResponse = await this.scryfallService.searchCard(`color:${colors}`);
+      // Obter o deck baseado nas cores do comandante
+      const deck = await this.scryfallService.getDeckByCommander(commander.name);
 
-      // Verifique se a resposta possui um array de cartas na propriedade `data`
-      if (!deckResponse || !deckResponse.data || !Array.isArray(deckResponse.data)) {
-        throw new HttpException('Erro ao buscar cartas para o deck', HttpStatus.INTERNAL_SERVER_ERROR);
-      }
-
-      // Filtrar o deck obtido para garantir conformidade com as regras do Commander
-      const filteredDeck = this.filterDeck(deckResponse.data);
-
-      // Salvar o deck em um arquivo JSON
-      await this.scryfallService.saveDeckToFile(filteredDeck);
-
-      // Salvar o deck no MongoDB
-      const savedDeck = await this.scryfallService.saveDeckToDatabase(filteredDeck);
-
-      return savedDeck;
+      return deck;
     } catch (error) {
       console.error('Erro interno do servidor:', error.message); // Log para depuração
       throw new HttpException('Erro interno do servidor', HttpStatus.INTERNAL_SERVER_ERROR);
     }
-  }
-
-  private filterDeck(cards: any[]): any[] {
-    if (!Array.isArray(cards)) {
-      throw new Error('Esperado um array de cartas');
-    }
-
-    const deck = [];
-    const basicLands = new Set(['Plains', 'Island', 'Swamp', 'Mountain', 'Forest']);
-
-    for (const card of cards) {
-      if (deck.length >= 99) break;
-
-      const isBasicLand = basicLands.has(card.name);
-
-      if (isBasicLand || !deck.find(c => c.name === card.name)) {
-        deck.push(card);
-      }
-    }
-
-    return deck;
   }
 }
