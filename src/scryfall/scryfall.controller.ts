@@ -10,20 +10,19 @@ export class ScryfallController {
   @Post('deck')
   async createDeck(@Body('commanderId') commanderId: string, @Req() req) {
     try {
-      // Obter o ID do usuário autenticado
 
       const userId = req.user.userId;
 
-      // Buscar o comandante pelo ID fornecido
+      // commander por id 
       const commander = await this.scryfallService.getCardById(commanderId);
       if (!commander || !commander.colors) {
         throw new HttpException('Comandante não encontrado ou dados inválidos', HttpStatus.NOT_FOUND);
       }
 
-      // Obter o deck baseado nas cores do comandante
+      // deck pelas cores
       const deck = await this.scryfallService.getDeckByCommander(commander.name);
 
-      // Adicionar o comandante ao deck
+      // add comander ao deck
       deck.push({
         name: commander.name,
         type: commander.type_line,
@@ -32,15 +31,15 @@ export class ScryfallController {
         imageUrl: commander.image_uris?.normal || null,
       });
 
-      // Salvar o deck em um arquivo JSON
+      // salvar deck no json
       await this.scryfallService.saveDeckToFile(deck);
 
-      // Salvar o deck no MongoDB, associando ao usuário
+      // salcar deck mongo
       const savedDeck = await this.scryfallService.saveDeckToDatabase(deck, userId, commander.name);
 
       return savedDeck;
     } catch (error) {
-      console.error('Erro interno do servidor:', error.message); // Log para depuração
+      console.error('Erro interno do servidor:', error.message); 
       throw new HttpException('Erro interno do servidor', HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }
@@ -51,7 +50,7 @@ export class ScryfallController {
       const response = await this.scryfallService.searchCard(query, page);
       return response;
     } catch (error) {
-      console.error('Erro ao buscar carta:', error); // Log para depuração
+      console.error('Erro ao buscar carta:', error); 
       throw new HttpException('Erro ao buscar carta', HttpStatus.BAD_REQUEST);
     }
   }
@@ -59,7 +58,7 @@ export class ScryfallController {
   @Get('commander')
   async getCommander(@Query('page') page: number = 1) {
     try {
-      const query = 'type:legendary+type:creature'; // Busca por criaturas lendárias
+      const query = 'type:legendary+type:creature'; 
       const response = await this.scryfallService.searchCard(query, page);
       return response;
     } catch (error) {
@@ -71,13 +70,11 @@ export class ScryfallController {
   @Get('deck')
   async getDeck(@Query('commanderId') commanderId: string) {
     try {
-      // Buscar o comandante pelo ID fornecido
       const commander = await this.scryfallService.getCardById(commanderId);
       if (!commander || !commander.colors) {
         throw new HttpException('Comandante não encontrado ou dados inválidos', HttpStatus.NOT_FOUND);
       }
 
-      // Obter o deck baseado nas cores do comandante
       const deck = await this.scryfallService.getDeckByCommander(commander.name);
 
       return deck;

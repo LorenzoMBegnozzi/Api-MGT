@@ -12,7 +12,6 @@ export class UsersService {
   async create(createUserDto: CreateUserDto): Promise<User> {
     const { username, password, email } = createUserDto;
 
-    // Verificar se o usuário ou email já existe
     const existingUser = await this.userModel.findOne({ $or: [{ username }, { email }] });
     if (existingUser) {
       throw new ConflictException('Username or email already in use');

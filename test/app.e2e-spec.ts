@@ -18,7 +18,6 @@ describe('ScryfallController (e2e)', () => {
     app = moduleFixture.createNestApplication();
     await app.init();
 
-    // Gerar um token JWT de teste
     const payload = { username: 'testuser', sub: 'user-id' };
     token = jwtService.sign(payload);
   });
@@ -31,7 +30,7 @@ describe('ScryfallController (e2e)', () => {
     return request(app.getHttpServer())
       .post('/scryfall/deck')
       .set('Authorization', `Bearer ${token}`)
-      .send({ commanderName: 'nome-valido-do-comandante' }) // Adaptado para o formato aceito pelo endpoint
+      .send({ commanderName: 'nome-valido-do-comandante' }) 
       .expect(HttpStatus.CREATED)
       .then(response => {
         expect(response.body).toHaveProperty('_id');
@@ -44,17 +43,17 @@ describe('ScryfallController (e2e)', () => {
     return request(app.getHttpServer())
       .post('/scryfall/deck')
       .set('Authorization', `Bearer ${token}`)
-      .send({ commanderName: 'nome-invalido-do-comandante' }) // Adaptado para o formato aceito pelo endpoint
+      .send({ commanderName: 'nome-invalido-do-comandante' }) 
       .expect(HttpStatus.NOT_FOUND)
       .then(response => {
-        expect(response.body.message).toBe('Comandante não encontrado'); // Verifique a mensagem de erro
+        expect(response.body.message).toBe('Comandante não encontrado'); 
       });
   });
 
   it('/scryfall/deck (POST) - Deve retornar 401 para usuário não autenticado', () => {
     return request(app.getHttpServer())
       .post('/scryfall/deck')
-      .send({ commanderName: 'nome-valido-do-comandante' }) // Adaptado para o formato aceito pelo endpoint
+      .send({ commanderName: 'nome-valido-do-comandante' }) 
       .expect(HttpStatus.UNAUTHORIZED);
   });
 

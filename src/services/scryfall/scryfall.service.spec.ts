@@ -14,7 +14,7 @@ export class ScryfallService {
       );
       return response.data;
     } catch (error) {
-      console.error('Erro ao buscar carta:', error); // Log para depuração
+      console.error('Erro ao buscar carta:', error); 
       throw new HttpException('Erro ao buscar carta', HttpStatus.BAD_REQUEST);
     }
   }
@@ -26,7 +26,7 @@ export class ScryfallService {
       );
       return response.data;
     } catch (error) {
-      console.error('Erro ao buscar carta por ID:', error); // Log para depuração
+      console.error('Erro ao buscar carta por ID:', error); 
       throw new HttpException('Erro ao buscar carta por ID', HttpStatus.NOT_FOUND);
     }
   }

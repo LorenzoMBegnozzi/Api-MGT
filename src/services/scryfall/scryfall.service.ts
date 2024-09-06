@@ -17,17 +17,17 @@ export class ScryfallService {
     @InjectModel('Deck') private readonly deckModel: Model<DeckDocument>,
   ) { }
 
-  // Método para salvar o deck no banco de dados MongoDB
+
   async saveDeckToDatabase(deck: any[], userId: string, commander: string) {
     try {
-      console.log('Salvando deck no banco de dados:', deck); // Log para depuração
+      console.log('Salvando deck no banco de dados:', deck); 
       const deckDocument = new this.deckModel({
         user: userId,
         commander: commander,
         cards: deck.map(card => card.name),
       });
       const savedDeck = await deckDocument.save();
-      console.log('Deck salvo com sucesso:', savedDeck); // Log para depuração
+      console.log('Deck salvo com sucesso:', savedDeck); 
       return savedDeck;
     } catch (error) {
       console.error('Erro ao salvar deck no banco de dados:', error);
@@ -35,7 +35,6 @@ export class ScryfallService {
     }
   }
 
-  // Método para buscar cartas com base em uma query
   async searchCard(query: string, page: number = 1): Promise<any> {
     try {
       const response: AxiosResponse<any> = await firstValueFrom(
@@ -63,7 +62,6 @@ export class ScryfallService {
   }
   
 
-  // Método para salvar o deck em um arquivo JSON
   async saveDeckToFile(deck: any[]): Promise<void> {
     const filePath = path.join(__dirname, '../../deck.json');
     return new Promise<void>((resolve, reject) => {
@@ -77,7 +75,6 @@ export class ScryfallService {
     });
   }
 
-  // Método para filtrar o deck conforme regras do Commander
   filterDeck(cards: any[]): any[] {
     if (!Array.isArray(cards)) {
       throw new Error('Esperado um array de cartas');
@@ -99,10 +96,8 @@ export class ScryfallService {
     return deck;
   }
 
-  // Método para obter um deck baseado no comandante
   async getDeckByCommander(commanderName: string): Promise<any[]> {
     try {
-      // Obtenha os dados do comandante
       const commanderData = await this.searchCard(commanderName);
 
       if (!commanderData || !commanderData.data || !commanderData.data.length) {
@@ -112,14 +107,12 @@ export class ScryfallService {
       const commander = commanderData.data[0];
       const colors = commander.colors.join('');
 
-      // Buscar as cartas que podem fazer parte do deck baseado nas cores do comandante
       const response: AxiosResponse<any> = await firstValueFrom(
         this.httpService.get(`https://api.scryfall.com/cards/search?q=format:commander+color<=${colors}&order=edhrec&unique=cards`)
       );
 
       const cards = response.data.data;
 
-      // Limitar o deck a 99 cartas
       const deckCards = this.filterDeck(cards).slice(0, 99);
 
       return deckCards.map((card: any) => ({

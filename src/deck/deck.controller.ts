@@ -7,6 +7,10 @@ export class DeckController {
 
   @Post('create')
   async createDeck(@Body('commanderName') commanderName: string) {
-    return this.deckService.createDeck(commanderName);
+    try {
+      return this.deckService.createDeck(commanderName);
+    }   catch {
+      throw new Error ("Errouuu")
+    }
   }
 }
