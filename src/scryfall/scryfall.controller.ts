@@ -6,23 +6,22 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 export class ScryfallController {
   constructor(private readonly scryfallService: ScryfallService) { }
 
-   @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard)
   @Post('deck')
   async createDeck(@Body('commanderId') commanderId: string, @Req() req) {
     try {
-
       const userId = req.user.userId;
 
-      // commander por id 
+      // Obtém o comandante por ID
       const commander = await this.scryfallService.getCardById(commanderId);
       if (!commander || !commander.colors) {
         throw new HttpException('Comandante não encontrado ou dados inválidos', HttpStatus.NOT_FOUND);
       }
 
-      // deck pelas cores
+      // Obtém o deck pelas cores do comandante
       const deck = await this.scryfallService.getDeckByCommander(commander.name);
 
-      // add comander ao deck
+      // Adiciona o comandante ao deck
       deck.push({
         name: commander.name,
         type: commander.type_line,
@@ -31,10 +30,10 @@ export class ScryfallController {
         imageUrl: commander.image_uris?.normal || null,
       });
 
-      // salvar deck no json
+      // Salva o deck em um arquivo
       await this.scryfallService.saveDeckToFile(deck);
 
-      // salcar deck mongo
+      // Salva o deck no banco de dados
       const savedDeck = await this.scryfallService.saveDeckToDatabase(deck, userId, commander.name);
 
       return savedDeck;
@@ -62,7 +61,7 @@ export class ScryfallController {
       const response = await this.scryfallService.searchCard(query, page);
       return response;
     } catch (error) {
-      console.error('Erro ao buscar comandante:', error); // Log para depuração
+      console.error('Erro ao buscar comandante:', error); 
       throw new HttpException('Erro ao buscar comandante', HttpStatus.BAD_REQUEST);
     }
   }
@@ -79,7 +78,7 @@ export class ScryfallController {
 
       return deck;
     } catch (error) {
-      console.error('Erro interno do servidor:', error.message); // Log para depuração
+      console.error('Erro interno do servidor:', error.message); 
       throw new HttpException('Erro interno do servidor', HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }

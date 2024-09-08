@@ -11,16 +11,46 @@ import * as path from 'path';
 
 @Injectable()
 export class ScryfallService {
+  filterDeck: any;
+
   constructor(
     private readonly httpService: HttpService,
     @InjectModel('Card') private readonly cardModel: Model<CardDocument>,
     @InjectModel('Deck') private readonly deckModel: Model<DeckDocument>,
   ) { }
 
+  // Método para buscar carta no Scryfall por ID
+  async getCardById(id: string): Promise<any> {
+    try {
+      const response: AxiosResponse<any> = await firstValueFrom(
+        this.httpService.get(`https://api.scryfall.com/cards/${id}`)
+      );
+      return response.data;
+    } catch (error) {
+      console.error('Erro ao buscar carta por ID:', error);
+      throw new HttpException('Erro ao buscar carta', HttpStatus.BAD_REQUEST);
+    }
+  }
 
+  // Método para buscar carta no Scryfall
+  async searchCard(query: string, page: number = 1): Promise<any> {
+    try {
+      const response: AxiosResponse<any> = await firstValueFrom(
+        this.httpService.get(`https://api.scryfall.com/cards/search?q=${query}&page=${page}`)
+      );
+      if (!response.data || !response.data.data.length) {
+        throw new HttpException('Carta não encontrada', HttpStatus.NOT_FOUND);
+      }
+      return response.data;
+    } catch (error) {
+      console.error('Erro ao buscar carta:', error);
+      throw new HttpException('Erro ao buscar carta', HttpStatus.BAD_REQUEST);
+    }
+  }
+
+  // Método para salvar o deck no MongoDB
   async saveDeckToDatabase(deck: any[], userId: string, commander: string) {
     try {
-      console.log('Salvando deck no banco de dados:', deck); 
       const deckDocument = new this.deckModel({
         user: userId,
         commander: commander,
@@ -35,72 +65,24 @@ export class ScryfallService {
     }
   }
 
-  async searchCard(query: string, page: number = 1): Promise<any> {
-    try {
-      const response: AxiosResponse<any> = await firstValueFrom(
-        this.httpService.get(`https://api.scryfall.com/cards/search?q=${query}&page=${page}`)
-      );
-      return response.data;
-    } catch (error) {
-      console.error('Erro ao buscar carta:', error);
-      throw new HttpException('Erro ao buscar carta', HttpStatus.BAD_REQUEST);
-    }
-  }
-
-  async getCardById(id: string): Promise<any> {
-    try {
-      console.log(`Buscando carta com ID: ${id}`);
-      const response: AxiosResponse<any> = await firstValueFrom(
-        this.httpService.get(`https://api.scryfall.com/cards/${id}`)
-      );
-      console.log('Resposta da API Scryfall:', response.data);
-      return response.data;
-    } catch (error) {
-      console.error('Erro ao buscar carta por ID:', error);
-      throw new HttpException('Erro ao buscar carta por ID', HttpStatus.NOT_FOUND);
-    }
-  }
-  
-
+  // Método para salvar o deck em um arquivo
   async saveDeckToFile(deck: any[]): Promise<void> {
-    const filePath = path.join(__dirname, '../../deck.json');
-    return new Promise<void>((resolve, reject) => {
-      fs.writeFile(filePath, JSON.stringify(deck, null, 2), 'utf8', (err) => {
-        if (err) {
-          console.error('Erro ao salvar o deck no arquivo:', err);
-          return reject(err);
-        }
-        resolve();
-      });
-    });
+    try {
+      const filePath = path.join(__dirname, 'deck.json'); // Defina o caminho do arquivo conforme necessário
+      fs.writeFileSync(filePath, JSON.stringify(deck, null, 2));
+      console.log('Deck salvo em arquivo com sucesso:', filePath);
+    } catch (error) {
+      console.error('Erro ao salvar deck em arquivo:', error);
+      throw new HttpException('Erro ao salvar deck em arquivo', HttpStatus.INTERNAL_SERVER_ERROR);
+    }
   }
 
-  filterDeck(cards: any[]): any[] {
-    if (!Array.isArray(cards)) {
-      throw new Error('Esperado um array de cartas');
-    }
-
-    const deck = [];
-    const basicLands = new Set(['Plains', 'Island', 'Swamp', 'Mountain', 'Forest']);
-
-    for (const card of cards) {
-      if (deck.length >= 99) break;
-
-      const isBasicLand = basicLands.has(card.name);
-
-      if (isBasicLand || !deck.find(c => c.name === card.name)) {
-        deck.push(card);
-      }
-    }
-
-    return deck;
-  }
-
+  // Método para obter deck baseado no comandante
   async getDeckByCommander(commanderName: string): Promise<any[]> {
     try {
       const commanderData = await this.searchCard(commanderName);
 
-      if (!commanderData || !commanderData.data || !commanderData.data.length) {
+      if (!commanderData || !commanderData.data.length) {
         throw new HttpException('Comandante não encontrado', HttpStatus.NOT_FOUND);
       }
 
@@ -112,6 +94,9 @@ export class ScryfallService {
       );
 
       const cards = response.data.data;
+      if (!cards.length) {
+        throw new HttpException('Cartas não encontradas para este comandante', HttpStatus.NOT_FOUND);
+      }
 
       const deckCards = this.filterDeck(cards).slice(0, 99);
 

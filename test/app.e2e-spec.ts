@@ -1,3 +1,4 @@
+// app.e2e-spec.ts
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication, HttpStatus } from '@nestjs/common';
 import * as request from 'supertest';
@@ -30,7 +31,7 @@ describe('ScryfallController (e2e)', () => {
     return request(app.getHttpServer())
       .post('/scryfall/deck')
       .set('Authorization', `Bearer ${token}`)
-      .send({ commanderName: 'nome-valido-do-comandante' }) 
+      .send({ commanderName: 'nome-valido-do-comandante' })
       .expect(HttpStatus.CREATED)
       .then(response => {
         expect(response.body).toHaveProperty('_id');
@@ -43,7 +44,7 @@ describe('ScryfallController (e2e)', () => {
     return request(app.getHttpServer())
       .post('/scryfall/deck')
       .set('Authorization', `Bearer ${token}`)
-      .send({ commanderName: 'nome-invalido-do-comandante' }) 
+      .send({ commanderName: 'nome-invalido-do-comandante' })
       .expect(HttpStatus.NOT_FOUND)
       .then(response => {
         expect(response.body.message).toBe('Comandante não encontrado'); 
@@ -61,7 +62,7 @@ describe('ScryfallController (e2e)', () => {
     return request(app.getHttpServer())
       .post('/scryfall/deck')
       .set('Authorization', `Bearer ${token}`)
-      .send({}) // Payload vazio
+      .send({}) 
       .expect(HttpStatus.BAD_REQUEST);
   });
 });
