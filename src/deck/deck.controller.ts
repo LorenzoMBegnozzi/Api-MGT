@@ -8,9 +8,10 @@ export class DeckController {
   @Post('create')
   async createDeck(@Body('commanderName') commanderName: string) {
     try {
-      return this.deckService.createDeck(commanderName);
-    }   catch {
-      throw new Error ("Errouuu")
+      const deck = await this.deckService.createDeck(commanderName);
+      return deck;
+    } catch (error) {
+      throw new Error(`Erro ao criar o deck: ${error.message}`);
     }
   }
 }

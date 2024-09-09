@@ -1,17 +1,17 @@
 import { Schema, Document } from 'mongoose';
 
-export const CardSchema = new Schema({
-  name: String,
-  type: String,
-  manaCost: String,
-  colors: [String],
-  imageUrl: String,
-});
-
 export interface Card extends Document {
   name: string;
   type: string;
   manaCost: string;
   colors: string[];
-  imageUrl: string;
+  imageUrl?: string;
 }
+
+export const CardSchema = new Schema({
+  name: { type: String, required: true },
+  type: { type: String, required: true },
+  manaCost: { type: String },
+  colors: [{ type: String }],
+  imageUrl: { type: String }
+});

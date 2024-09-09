@@ -6,7 +6,6 @@ export const CardSchema = new Schema({
   manaCost: { type: String },
   colors: { type: [String] },
   imageUrl: { type: String },
-  // Adicione outros campos conforme necessário
 });
 
 export interface Card {

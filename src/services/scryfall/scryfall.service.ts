@@ -11,8 +11,6 @@ import * as path from 'path';
 
 @Injectable()
 export class ScryfallService {
-  filterDeck: any;
-
   constructor(
     private readonly httpService: HttpService,
     @InjectModel('Card') private readonly cardModel: Model<CardDocument>,
@@ -20,15 +18,14 @@ export class ScryfallService {
   ) { }
 
   // Método para buscar carta no Scryfall por ID
-  async getCardById(id: string): Promise<any> {
+  async getCardById(cardId: string) {
     try {
-      const response: AxiosResponse<any> = await firstValueFrom(
-        this.httpService.get(`https://api.scryfall.com/cards/${id}`)
-      );
+      console.log('Buscando carta com ID:', cardId);
+      const response = await this.httpService.get(`https://api.scryfall.com/cards/${cardId}`).toPromise();
       return response.data;
     } catch (error) {
       console.error('Erro ao buscar carta por ID:', error);
-      throw new HttpException('Erro ao buscar carta', HttpStatus.BAD_REQUEST);
+      throw new Error('Erro ao buscar carta por ID');
     }
   }
 
@@ -52,12 +49,12 @@ export class ScryfallService {
   async saveDeckToDatabase(deck: any[], userId: string, commander: string) {
     try {
       const deckDocument = new this.deckModel({
-        user: userId,
+        user: userId, // Passa o userId corretamente
         commander: commander,
-        cards: deck.map(card => card.name),
+        cards: this.filterDeck(deck), // Usa a função filterDeck para obter os IDs das cartas
       });
       const savedDeck = await deckDocument.save();
-      console.log('Deck salvo com sucesso:', savedDeck); 
+      console.log('Deck salvo com sucesso:', savedDeck);
       return savedDeck;
     } catch (error) {
       console.error('Erro ao salvar deck no banco de dados:', error);
@@ -98,18 +95,26 @@ export class ScryfallService {
         throw new HttpException('Cartas não encontradas para este comandante', HttpStatus.NOT_FOUND);
       }
 
-      const deckCards = this.filterDeck(cards).slice(0, 99);
-
-      return deckCards.map((card: any) => ({
+      // Mapeia as cartas para o formato desejado, incluindo o campo _id se disponível
+      const deckCards = cards.slice(0, 99).map((card: any) => ({
+        _id: card.id, // Certifique-se de adicionar o campo _id se necessário
         name: card.name,
         type: card.type_line,
         manaCost: card.mana_cost,
         colors: card.colors,
         imageUrl: card.image_uris?.normal || null,
       }));
+
+      return deckCards;
     } catch (error) {
       console.error('Erro ao obter deck por comandante:', error);
       throw new HttpException('Erro ao obter deck por comandante', HttpStatus.INTERNAL_SERVER_ERROR);
     }
+  }
+
+  // Função para filtrar e transformar as cartas
+  filterDeck(cards: any[]): any[] {
+    // Retorna apenas os IDs das cartas, assumindo que cada carta tem um campo _id
+    return cards.map(card => card._id); // Ajuste conforme a estrutura dos dados
   }
 }

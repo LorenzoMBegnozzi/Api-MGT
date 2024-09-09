@@ -8,48 +8,59 @@ export class ScryfallController {
 
   @UseGuards(JwtAuthGuard)
   @Post('deck')
-  async createDeck(@Body('commanderId') commanderId: string, @Req() req) {
-    try {
-      const userId = req.user.userId;
+async createDeck(@Body('commanderId') commanderId: string, @Req() req) {
+  try {
+    console.log('Request User:', req.user);
 
-      // Obtém o comandante por ID
-      const commander = await this.scryfallService.getCardById(commanderId);
-      if (!commander || !commander.colors) {
-        throw new HttpException('Comandante não encontrado ou dados inválidos', HttpStatus.NOT_FOUND);
-      }
+    const userId = req.user?.userId;
 
-      // Obtém o deck pelas cores do comandante
-      const deck = await this.scryfallService.getDeckByCommander(commander.name);
-
-      // Adiciona o comandante ao deck
-      deck.push({
-        name: commander.name,
-        type: commander.type_line,
-        manaCost: commander.mana_cost,
-        colors: commander.colors,
-        imageUrl: commander.image_uris?.normal || null,
-      });
-
-      // Salva o deck em um arquivo
-      await this.scryfallService.saveDeckToFile(deck);
-
-      // Salva o deck no banco de dados
-      const savedDeck = await this.scryfallService.saveDeckToDatabase(deck, userId, commander.name);
-
-      return savedDeck;
-    } catch (error) {
-      console.error('Erro interno do servidor:', error.message); 
-      throw new HttpException('Erro interno do servidor', HttpStatus.INTERNAL_SERVER_ERROR);
+    if (!userId) {
+      throw new HttpException('Usuário não autenticado', HttpStatus.UNAUTHORIZED);
     }
+
+    //comandante por ID
+    const commander = await this.scryfallService.getCardById(commanderId);
+    if (!commander || !commander.colors) {
+      throw new HttpException('Comandante não encontrado ou dados inválidos', HttpStatus.NOT_FOUND);
+    }
+
+    // deck pelas cores do comandante
+    const deck = await this.scryfallService.getDeckByCommander(commander.name);
+
+    // add o comandante ao deck
+    deck.push({
+      name: commander.name,
+      type: commander.type_line,
+      manaCost: commander.mana_cost,
+      colors: commander.colors,
+      imageUrl: commander.image_uris?.normal || null,
+    });
+
+    // salva o deck 
+    await this.scryfallService.saveDeckToFile(deck);
+
+    // salva o deck no banco de dados
+    console.log('Salvando deck com userId:', userId); 
+    const savedDeck = await this.scryfallService.saveDeckToDatabase(deck, userId, commander.name);
+
+    return savedDeck;
+  } catch (error) {
+    console.error('Erro interno do servidor:', error.message);
+    throw new HttpException('Erro interno do servidor', HttpStatus.INTERNAL_SERVER_ERROR);
   }
+}
 
   @Get('search')
   async searchCard(@Query('q') query: string, @Query('page') page: number = 1) {
     try {
+      if (!query) {
+        throw new HttpException('Query é necessária', HttpStatus.BAD_REQUEST);
+      }
+
       const response = await this.scryfallService.searchCard(query, page);
       return response;
     } catch (error) {
-      console.error('Erro ao buscar carta:', error); 
+      console.error('Erro ao buscar carta:', error.message); 
       throw new HttpException('Erro ao buscar carta', HttpStatus.BAD_REQUEST);
     }
   }
@@ -61,7 +72,7 @@ export class ScryfallController {
       const response = await this.scryfallService.searchCard(query, page);
       return response;
     } catch (error) {
-      console.error('Erro ao buscar comandante:', error); 
+      console.error('Erro ao buscar comandante:', error.message); 
       throw new HttpException('Erro ao buscar comandante', HttpStatus.BAD_REQUEST);
     }
   }
@@ -69,6 +80,10 @@ export class ScryfallController {
   @Get('deck')
   async getDeck(@Query('commanderId') commanderId: string) {
     try {
+      if (!commanderId) {
+        throw new HttpException('ID do comandante é necessário', HttpStatus.BAD_REQUEST);
+      }
+
       const commander = await this.scryfallService.getCardById(commanderId);
       if (!commander || !commander.colors) {
         throw new HttpException('Comandante não encontrado ou dados inválidos', HttpStatus.NOT_FOUND);
@@ -78,8 +93,8 @@ export class ScryfallController {
 
       return deck;
     } catch (error) {
-      console.error('Erro interno do servidor:', error.message); 
-      throw new HttpException('Erro interno do servidor', HttpStatus.INTERNAL_SERVER_ERROR);
+      console.error('Erro ao buscar deck:', error.message); 
+      throw new HttpException('Erro ao buscar deck', HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }
 }

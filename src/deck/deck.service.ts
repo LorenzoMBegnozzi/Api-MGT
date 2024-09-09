@@ -14,38 +14,56 @@ export class DeckService {
     @InjectModel('Card') private cardModel: Model<Card>,
   ) { }
 
-  async createDeck(commanderName: string): Promise<any> {
+  async createDeck(commanderName: string): Promise<Deck> {
+    console.log(`Buscando comandante: ${commanderName}`);
 
     const commanderResponse = await firstValueFrom(
       this.httpService.get(`https://api.scryfall.com/cards/named?exact=${commanderName}`),
     );
-    console.log(commanderName);
 
     if (!commanderResponse.data) {
       throw new NotFoundException(`Comandante ${commanderName} não encontrado.`);
     }
 
     const commander = commanderResponse.data;
+    console.log('Comandante encontrado:', commander);
+
+    if (!commander.color_identity || commander.color_identity.length === 0) {
+      throw new NotFoundException(`Comandante ${commanderName} não possui identidade de cor.`);
+    }
 
     const colorIdentity = commander.color_identity.join('');
+    console.log('Identidade de cor:', colorIdentity);
+
     const cardsResponse = await firstValueFrom(
       this.httpService.get(`https://api.scryfall.com/cards/search?q=color_identity<=${colorIdentity}&unique=cards&order=edhrec`),
     );
 
-    const cards = cardsResponse.data.data;
+    console.log('Cartas encontradas:', cardsResponse.data);
 
+    const cards = cardsResponse.data.data;
     const deckCards = cards.slice(0, 99);
 
+    const savedCards = await Promise.all(
+      deckCards.map(async card => {
+        const newCard = new this.cardModel({
+          name: card.name,
+          type: card.type_line,
+          manaCost: card.mana_cost,
+          colors: card.colors,
+          imageUrl: card.image_uris?.normal || '',
+        });
+        return newCard.save();
+      }),
+    );
+
+   
     const deck = new this.deckModel({
       commander: commander.name,
-      cards: deckCards.map(card => ({
-        name: card.name,
-        type: card.type_line,
-        manaCost: card.mana_cost,
-        colors: card.colors,
-        imageUrl: card.image_uris?.normal || '',
-      })),
+      cards: savedCards.map(savedCard => savedCard._id),
     });
+
+    console.log('Deck criado:', deck);
 
     return deck.save();
   }
