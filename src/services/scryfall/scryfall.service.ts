@@ -17,7 +17,7 @@ export class ScryfallService {
     @InjectModel('Deck') private readonly deckModel: Model<DeckDocument>,
   ) { }
 
-  // Método para buscar carta no Scryfall por ID
+  //  buscar carta por ID
   async getCardById(cardId: string) {
     try {
       console.log('Buscando carta com ID:', cardId);
@@ -29,7 +29,7 @@ export class ScryfallService {
     }
   }
 
-  // Método para buscar carta no Scryfall
+  // uscar carta no Scryfall
   async searchCard(query: string, page: number = 1): Promise<any> {
     try {
       const response: AxiosResponse<any> = await firstValueFrom(
@@ -45,13 +45,13 @@ export class ScryfallService {
     }
   }
 
-  // Método para salvar o deck no MongoDB
+  //salvar o deck no MongoDB
   async saveDeckToDatabase(deck: any[], userId: string, commander: string) {
     try {
       const deckDocument = new this.deckModel({
-        user: userId, // Passa o userId corretamente
+        user: userId,
         commander: commander,
-        cards: this.filterDeck(deck), // Usa a função filterDeck para obter os IDs das cartas
+        cards: this.filterDeck(deck),
       });
       const savedDeck = await deckDocument.save();
       console.log('Deck salvo com sucesso:', savedDeck);
@@ -62,10 +62,10 @@ export class ScryfallService {
     }
   }
 
-  // Método para salvar o deck em um arquivo
+  //salva o deck em um arquivo
   async saveDeckToFile(deck: any[]): Promise<void> {
     try {
-      const filePath = path.join(__dirname, 'deck.json'); // Defina o caminho do arquivo conforme necessário
+      const filePath = path.join(__dirname, 'deck.json'); 
       fs.writeFileSync(filePath, JSON.stringify(deck, null, 2));
       console.log('Deck salvo em arquivo com sucesso:', filePath);
     } catch (error) {
@@ -95,9 +95,8 @@ export class ScryfallService {
         throw new HttpException('Cartas não encontradas para este comandante', HttpStatus.NOT_FOUND);
       }
 
-      // Mapeia as cartas para o formato desejado, incluindo o campo _id se disponível
       const deckCards = cards.slice(0, 99).map((card: any) => ({
-        _id: card.id, // Certifique-se de adicionar o campo _id se necessário
+        _id: card.id, 
         name: card.name,
         type: card.type_line,
         manaCost: card.mana_cost,
@@ -112,9 +111,7 @@ export class ScryfallService {
     }
   }
 
-  // Função para filtrar e transformar as cartas
   filterDeck(cards: any[]): any[] {
-    // Retorna apenas os IDs das cartas, assumindo que cada carta tem um campo _id
-    return cards.map(card => card._id); // Ajuste conforme a estrutura dos dados
+    return cards.map(card => card._id); 
   }
 }

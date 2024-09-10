@@ -25,3 +25,4 @@ import { DeckModule } from './deck/deck.module';
   providers: [ScryfallService],
 })
 export class AppModule {}
+  
