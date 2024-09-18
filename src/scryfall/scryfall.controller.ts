@@ -1,54 +1,89 @@
 import { Controller, Get, Post, Body, Query, HttpException, HttpStatus, UseGuards, Req } from '@nestjs/common';
 import { ScryfallService } from '../services/scryfall/scryfall.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { RolesGuard } from '../auth/guards/roles.guard';
+import { Roles } from '../auth/decorators/roles.decorator';
+import { Role } from '../auth/decorators/role.enum';
+
 
 @Controller('scryfall')
 export class ScryfallController {
   constructor(private readonly scryfallService: ScryfallService) { }
 
+  @Roles(Role.User)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Get('decks')
+  async getDecks(@Req() req) {
+    try {
+      const userId = req.user?.userId;
+      if (!userId) {
+        throw new HttpException('Usuário não autenticado', HttpStatus.UNAUTHORIZED);
+      }
+
+      const decks = await this.scryfallService.getDecksByUserId(userId);
+      return decks;
+    } catch (error) {
+      console.error('Erro ao buscar decks:', error.message);
+      throw new HttpException('Erro ao buscar decks', HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+  }
+
+  @Roles(Role.Admin)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Get('decks/all')
+  async getAllDecks(@Req() req) {
+    try {
+      const decks = await this.scryfallService.getAllDecks();
+      return decks;
+    } catch (error) {
+      console.error('Erro ao buscar todos os baralhos:', error.message);
+      throw new HttpException('Erro ao buscar baralhos', HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+  }
+
   @UseGuards(JwtAuthGuard)
   @Post('deck')
-async createDeck(@Body('commanderId') commanderId: string, @Req() req) {
-  try {
-    console.log('Request User:', req.user);
+  async createDeck(@Body('commanderId') commanderId: string, @Req() req) {
+    try {
+      console.log('Request User:', req.user);
 
-    const userId = req.user?.userId;
+      const userId = req.user?.userId;
 
-    if (!userId) {
-      throw new HttpException('Usuário não autenticado', HttpStatus.UNAUTHORIZED);
+      if (!userId) {
+        throw new HttpException('Usuário não autenticado', HttpStatus.UNAUTHORIZED);
+      }
+
+      // Obtém o comandante pelo ID
+      const commander = await this.scryfallService.getCardById(commanderId);
+      if (!commander || !commander.colors) {
+        throw new HttpException('Comandante não encontrado ou dados inválidos', HttpStatus.NOT_FOUND);
+      }
+
+      // Busca o deck pelas cores do comandante
+      const deck = await this.scryfallService.getDeckByCommander(commander.colors);
+
+      // Adiciona o comandante ao deck
+      deck.push({
+        name: commander.name,
+        type: commander.type_line,
+        manaCost: commander.mana_cost,
+        colors: commander.colors,
+        imageUrl: commander.image_uris?.normal || null,
+      });
+
+      // Salva o deck em arquivo
+      await this.scryfallService.saveDeckToFile(deck);
+
+      // Salva o deck no banco de dados
+      console.log('Salvando deck com userId:', userId);
+      const savedDeck = await this.scryfallService.saveDeckToDatabase(deck, userId, commander.name);
+
+      return savedDeck;
+    } catch (error) {
+      console.error('Erro interno do servidor:', error.message);
+      throw new HttpException('Erro interno do servidor', HttpStatus.INTERNAL_SERVER_ERROR);
     }
-
-    //comandante por ID
-    const commander = await this.scryfallService.getCardById(commanderId);
-    if (!commander || !commander.colors) {
-      throw new HttpException('Comandante não encontrado ou dados inválidos', HttpStatus.NOT_FOUND);
-    }
-
-    // deck pelas cores do comandante
-    const deck = await this.scryfallService.getDeckByCommander(commander.name);
-
-    // add o comandante ao deck
-    deck.push({
-      name: commander.name,
-      type: commander.type_line,
-      manaCost: commander.mana_cost,
-      colors: commander.colors,
-      imageUrl: commander.image_uris?.normal || null,
-    });
-
-    // salva o deck 
-    await this.scryfallService.saveDeckToFile(deck);
-
-    // salva o deck no banco de dados
-    console.log('Salvando deck com userId:', userId); 
-    const savedDeck = await this.scryfallService.saveDeckToDatabase(deck, userId, commander.name);
-
-    return savedDeck;
-  } catch (error) {
-    console.error('Erro interno do servidor:', error.message);
-    throw new HttpException('Erro interno do servidor', HttpStatus.INTERNAL_SERVER_ERROR);
   }
-}
 
   @Get('search')
   async searchCard(@Query('q') query: string, @Query('page') page: number = 1) {
@@ -60,7 +95,7 @@ async createDeck(@Body('commanderId') commanderId: string, @Req() req) {
       const response = await this.scryfallService.searchCard(query, page);
       return response;
     } catch (error) {
-      console.error('Erro ao buscar carta:', error.message); 
+      console.error('Erro ao buscar carta:', error.message);
       throw new HttpException('Erro ao buscar carta', HttpStatus.BAD_REQUEST);
     }
   }
@@ -68,11 +103,11 @@ async createDeck(@Body('commanderId') commanderId: string, @Req() req) {
   @Get('commander')
   async getCommander(@Query('page') page: number = 1) {
     try {
-      const query = 'type:legendary+type:creature'; 
+      const query = 'type:legendary+type:creature';
       const response = await this.scryfallService.searchCard(query, page);
       return response;
     } catch (error) {
-      console.error('Erro ao buscar comandante:', error.message); 
+      console.error('Erro ao buscar comandante:', error.message);
       throw new HttpException('Erro ao buscar comandante', HttpStatus.BAD_REQUEST);
     }
   }
@@ -84,16 +119,18 @@ async createDeck(@Body('commanderId') commanderId: string, @Req() req) {
         throw new HttpException('ID do comandante é necessário', HttpStatus.BAD_REQUEST);
       }
 
+      // Obtém o comandante pelo ID
       const commander = await this.scryfallService.getCardById(commanderId);
       if (!commander || !commander.colors) {
         throw new HttpException('Comandante não encontrado ou dados inválidos', HttpStatus.NOT_FOUND);
       }
 
-      const deck = await this.scryfallService.getDeckByCommander(commander.name);
+      // Busca o deck baseado nas cores do comandante
+      const deck = await this.scryfallService.getDeckByCommander(commander.colors);
 
       return deck;
     } catch (error) {
-      console.error('Erro ao buscar deck:', error.message); 
+      console.error('Erro ao buscar deck:', error.message);
       throw new HttpException('Erro ao buscar deck', HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }

@@ -15,21 +15,43 @@ export class ScryfallService {
     private readonly httpService: HttpService,
     @InjectModel('Card') private readonly cardModel: Model<CardDocument>,
     @InjectModel('Deck') private readonly deckModel: Model<DeckDocument>,
-  ) { }
+  ) {}
 
-  //  buscar carta por ID
-  async getCardById(cardId: string) {
+  // Busca todos os decks do banco de dados por userId
+  async getDecksByUserId(userId: string): Promise<DeckDocument[]> {
     try {
-      console.log('Buscando carta com ID:', cardId);
-      const response = await this.httpService.get(`https://api.scryfall.com/cards/${cardId}`).toPromise();
-      return response.data;
+      return await this.deckModel.find({ user: userId }).exec();
     } catch (error) {
-      console.error('Erro ao buscar carta por ID:', error);
-      throw new Error('Erro ao buscar carta por ID');
+      console.error('Erro ao buscar decks pelo ID do usuário:', error);
+      throw new HttpException('Erro ao buscar decks', HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }
 
-  // uscar carta no Scryfall
+  // Busca todos os decks do banco de dados
+  async getAllDecks(): Promise<DeckDocument[]> {
+    try {
+      return await this.deckModel.find().exec();
+    } catch (error) {
+      console.error('Erro ao buscar todos os baralhos:', error);
+      throw new HttpException('Erro ao buscar baralhos', HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+  }
+
+  // Busca carta por ID
+  async getCardById(cardId: string): Promise<any> {
+    try {
+      console.log('Buscando carta com ID:', cardId);
+      const response = await firstValueFrom(
+        this.httpService.get(`https://api.scryfall.com/cards/${cardId}`)
+      );
+      return response.data;
+    } catch (error) {
+      console.error('Erro ao buscar carta por ID:', error);
+      throw new HttpException('Erro ao buscar carta por ID', HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+  }
+
+  // Busca carta no Scryfall
   async searchCard(query: string, page: number = 1): Promise<any> {
     try {
       const response: AxiosResponse<any> = await firstValueFrom(
@@ -45,8 +67,8 @@ export class ScryfallService {
     }
   }
 
-  //salvar o deck no MongoDB
-  async saveDeckToDatabase(deck: any[], userId: string, commander: string) {
+  // Salva o deck no MongoDB
+  async saveDeckToDatabase(deck: any[], userId: string, commander: string): Promise<DeckDocument> {
     try {
       const deckDocument = new this.deckModel({
         user: userId,
@@ -62,10 +84,10 @@ export class ScryfallService {
     }
   }
 
-  //salva o deck em um arquivo
+  // Salva o deck em um arquivo
   async saveDeckToFile(deck: any[]): Promise<void> {
     try {
-      const filePath = path.join(__dirname, 'deck.json'); 
+      const filePath = path.join(__dirname, 'deck.json');
       fs.writeFileSync(filePath, JSON.stringify(deck, null, 2));
       console.log('Deck salvo em arquivo com sucesso:', filePath);
     } catch (error) {
@@ -74,20 +96,13 @@ export class ScryfallService {
     }
   }
 
-  // Método para obter deck baseado no comandante
-  async getDeckByCommander(commanderName: string): Promise<any[]> {
+  // Busca o deck baseado no comandante
+  async getDeckByCommander(colors: string[]): Promise<any[]> {
     try {
-      const commanderData = await this.searchCard(commanderName);
-
-      if (!commanderData || !commanderData.data.length) {
-        throw new HttpException('Comandante não encontrado', HttpStatus.NOT_FOUND);
-      }
-
-      const commander = commanderData.data[0];
-      const colors = commander.colors.join('');
+      const colorQuery = colors.join('');
 
       const response: AxiosResponse<any> = await firstValueFrom(
-        this.httpService.get(`https://api.scryfall.com/cards/search?q=format:commander+color<=${colors}&order=edhrec&unique=cards`)
+        this.httpService.get(`https://api.scryfall.com/cards/search?q=format:commander+color<=${colorQuery}&order=edhrec&unique=cards`)
       );
 
       const cards = response.data.data;
@@ -96,7 +111,7 @@ export class ScryfallService {
       }
 
       const deckCards = cards.slice(0, 99).map((card: any) => ({
-        _id: card.id, 
+        _id: card.id,
         name: card.name,
         type: card.type_line,
         manaCost: card.mana_cost,
@@ -111,7 +126,8 @@ export class ScryfallService {
     }
   }
 
+  // Filtra o deck para obter apenas os IDs das cartas
   filterDeck(cards: any[]): any[] {
-    return cards.map(card => card._id); 
+    return cards.map(card => card._id);
   }
 }

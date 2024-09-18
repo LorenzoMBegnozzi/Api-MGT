@@ -25,7 +25,7 @@ export class AuthService {
     if (!user) {
       throw new UnauthorizedException();
     }
-    const payload = { username: user.username, userId: user._id };
+    const payload = { username: user.username, userId: user._id, role: user.role }; // Certifique-se de incluir o campo role
     return {
       access_token: this.jwtService.sign(payload),
     };

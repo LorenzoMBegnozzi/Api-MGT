@@ -108,4 +108,10 @@ export class UsersService {
 
     console.log(`Usuário com nome de usuário: ${username} deletado com sucesso.`);
   }
+
+  // Novo método para obter o papel do usuário
+  async getUserRole(userId: string): Promise<string> {
+    const user = await this.findOneById(userId);
+    return user.role; // Supondo que o documento de usuário tem o campo `role`
+  }
 }
