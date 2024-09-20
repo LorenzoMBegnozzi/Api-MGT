@@ -24,7 +24,7 @@ export class UsersService {
       username,
       password: hashedPassword,
       email,
-      role, // Adicione esta linha
+      role,
     });
 
     return await newUser.save();
@@ -42,9 +42,13 @@ export class UsersService {
   async findOneByUsername(username: string): Promise<User | undefined> {
     console.log(`Encontrando usuário com nome de usuário: ${username}`);
     const user = await this.userModel.findOne({ username });
+  
     if (!user) {
       throw new NotFoundException('Usuário não encontrado');
     }
+  
+    console.log('Usuário encontrado:', user); 
+  
     return user;
   }
 
@@ -97,7 +101,6 @@ export class UsersService {
     if (!result) {
       throw new NotFoundException('Usuário não encontrado');
     }
-
     console.log(`Usuário com ID: ${id} deletado com sucesso.`);
   }
 
@@ -106,13 +109,11 @@ export class UsersService {
     if (!result) {
       throw new NotFoundException('Usuário não encontrado');
     }
-
     console.log(`Usuário com nome de usuário: ${username} deletado com sucesso.`);
   }
 
-  // Novo método para obter o papel do usuário
   async getUserRole(userId: string): Promise<string> {
     const user = await this.findOneById(userId);
-    return user.role; // Supondo que o documento de usuário tem o campo `role`
+    return user.role; 
   }
 }

@@ -4,24 +4,31 @@ import { Role } from '../decorators/role.enum';
 
 @Injectable()
 export class RolesGuard implements CanActivate {
-  constructor(private reflector: Reflector) {}
+  constructor(private reflector: Reflector) { }
 
   canActivate(context: ExecutionContext): boolean {
-    const roles = this.reflector.get<Role[]>('roles', context.getHandler());
-    if (!roles) {
-      return true; // Se não houver roles definidas, permite acesso
+    // obter roles necessarias 
+    const requiredRoles = this.reflector.getAllAndOverride<Role[]>('roles', [
+      context.getHandler(),
+      context.getClass(),
+    ]);
+
+    // rota publica
+    if (!requiredRoles) {
+      return true;
     }
 
     const request = context.switchToHttp().getRequest();
     const user = request.user;
 
+    // ve usuario está autenticado e tem o campo 'role'
     if (!user || !user.role) {
       throw new ForbiddenException('Usuário não autenticado ou sem função definida');
     }
-
     const userRoles = Array.isArray(user.role) ? user.role : [user.role];
 
-    if (!roles.some(role => userRoles.includes(role))) {
+    const hasRole = requiredRoles.some((role) => userRoles.includes(role));
+    if (!hasRole) {
       throw new ForbiddenException('Acesso negado. Somente usuários com permissão apropriada podem acessar essa rota.');
     }
 

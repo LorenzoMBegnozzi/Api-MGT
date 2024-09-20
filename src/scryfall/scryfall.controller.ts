@@ -53,16 +53,16 @@ export class ScryfallController {
         throw new HttpException('Usuário não autenticado', HttpStatus.UNAUTHORIZED);
       }
 
-      // Obtém o comandante pelo ID
+      //comandante pelo ID
       const commander = await this.scryfallService.getCardById(commanderId);
       if (!commander || !commander.colors) {
         throw new HttpException('Comandante não encontrado ou dados inválidos', HttpStatus.NOT_FOUND);
       }
 
-      // Busca o deck pelas cores do comandante
+      // acha deck pelas cores do comandante
       const deck = await this.scryfallService.getDeckByCommander(commander.colors);
 
-      // Adiciona o comandante ao deck
+      // add o comandante ao deck
       deck.push({
         name: commander.name,
         type: commander.type_line,
@@ -71,10 +71,10 @@ export class ScryfallController {
         imageUrl: commander.image_uris?.normal || null,
       });
 
-      // Salva o deck em arquivo
+      // salva o deck em arquivo
       await this.scryfallService.saveDeckToFile(deck);
 
-      // Salva o deck no banco de dados
+      // salva o deck no db
       console.log('Salvando deck com userId:', userId);
       const savedDeck = await this.scryfallService.saveDeckToDatabase(deck, userId, commander.name);
 
@@ -119,13 +119,13 @@ export class ScryfallController {
         throw new HttpException('ID do comandante é necessário', HttpStatus.BAD_REQUEST);
       }
 
-      // Obtém o comandante pelo ID
+      // obtem o comandante pelo id
       const commander = await this.scryfallService.getCardById(commanderId);
       if (!commander || !commander.colors) {
         throw new HttpException('Comandante não encontrado ou dados inválidos', HttpStatus.NOT_FOUND);
       }
 
-      // Busca o deck baseado nas cores do comandante
+      // acha o deck pelas cores do comandante
       const deck = await this.scryfallService.getDeckByCommander(commander.colors);
 
       return deck;

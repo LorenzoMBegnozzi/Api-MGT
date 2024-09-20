@@ -9,12 +9,12 @@ export class AuthService {
   constructor(
     private usersService: UsersService,
     private jwtService: JwtService
-  ) {}
+  ) { }
 
   async validateUser(username: string, password: string): Promise<any> {
     const user = await this.usersService.findOneByUsername(username);
     if (user && await bcrypt.compare(password, user.password)) {
-      const { password, ...result } = user.toObject(); 
+      const { password, ...result } = user.toObject();
       return result;
     }
     return null;
@@ -25,7 +25,8 @@ export class AuthService {
     if (!user) {
       throw new UnauthorizedException();
     }
-    const payload = { username: user.username, userId: user._id, role: user.role }; // Certifique-se de incluir o campo role
+    console.log('User after validation:', user);
+    const payload = { username: user.username, userId: user._id, role: user.role };
     return {
       access_token: this.jwtService.sign(payload),
     };

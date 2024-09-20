@@ -1,6 +1,5 @@
-// src/users/dto/create-user.dto.ts
 import { IsString, MinLength, MaxLength, IsEmail } from 'class-validator';
-import { Role } from '../auth/decorators/role.enum'; // Altere o caminho conforme necessário
+import { Role } from '../auth/decorators/role.enum'; 
 
 export class CreateUserDto {
   @IsString()
@@ -15,6 +14,6 @@ export class CreateUserDto {
   @IsEmail()
   readonly email: string;
 
-  @IsString() // Adicione a validação se necessário
-  readonly role: Role; // ou apenas string, dependendo da sua implementação
+  @IsString() 
+  readonly role: Role; 
 }

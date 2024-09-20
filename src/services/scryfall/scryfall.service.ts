@@ -17,7 +17,7 @@ export class ScryfallService {
     @InjectModel('Deck') private readonly deckModel: Model<DeckDocument>,
   ) {}
 
-  // Busca todos os decks do banco de dados por userId
+  // busca todos os decks do banco de dados por id do usaurio
   async getDecksByUserId(userId: string): Promise<DeckDocument[]> {
     try {
       return await this.deckModel.find({ user: userId }).exec();
@@ -27,7 +27,7 @@ export class ScryfallService {
     }
   }
 
-  // Busca todos os decks do banco de dados
+  // chama todos os decks do banco de dados
   async getAllDecks(): Promise<DeckDocument[]> {
     try {
       return await this.deckModel.find().exec();
@@ -37,7 +37,7 @@ export class ScryfallService {
     }
   }
 
-  // Busca carta por ID
+  // busca carta por id
   async getCardById(cardId: string): Promise<any> {
     try {
       console.log('Buscando carta com ID:', cardId);
@@ -51,7 +51,6 @@ export class ScryfallService {
     }
   }
 
-  // Busca carta no Scryfall
   async searchCard(query: string, page: number = 1): Promise<any> {
     try {
       const response: AxiosResponse<any> = await firstValueFrom(
@@ -67,7 +66,7 @@ export class ScryfallService {
     }
   }
 
-  // Salva o deck no MongoDB
+  // salva o deck no mongo
   async saveDeckToDatabase(deck: any[], userId: string, commander: string): Promise<DeckDocument> {
     try {
       const deckDocument = new this.deckModel({
@@ -84,7 +83,7 @@ export class ScryfallService {
     }
   }
 
-  // Salva o deck em um arquivo
+  // salva o deck em um arquivo
   async saveDeckToFile(deck: any[]): Promise<void> {
     try {
       const filePath = path.join(__dirname, 'deck.json');
@@ -126,7 +125,7 @@ export class ScryfallService {
     }
   }
 
-  // Filtra o deck para obter apenas os IDs das cartas
+  // filtro para ter apenas os id das cartas
   filterDeck(cards: any[]): any[] {
     return cards.map(card => card._id);
   }

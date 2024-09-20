@@ -1,17 +1,17 @@
-import { Controller, Post, Body, Get, Query, UseGuards, Param } from '@nestjs/common';
+import { Controller, Post, Body, Get, UseGuards, Request, Param } from '@nestjs/common';
 import { DeckService } from './deck.service';
-import { CacheTTL } from '@nestjs/cache-manager';
-import { Roles } from '../auth/decorators/roles.decorator'; // Altere o caminho conforme necessário
-import { RolesGuard } from '../auth/guards/roles.guard'; // Altere o caminho conforme necessário
-import { Role } from 'src/auth/decorators/role.enum';
+import { Roles } from '../auth/decorators/roles.decorator';
+import { RolesGuard } from '../auth/guards/roles.guard';
+import { Role } from '../auth/decorators/role.enum';
 import { AuthGuard } from '@nestjs/passport';
 
 @Controller('decks')
 export class DeckController {
   constructor(private readonly deckService: DeckService) {}
 
-  // Criar um deck
+  // criar um deck
   @Post('create')
+  @UseGuards(AuthGuard('jwt')) // rota para usuarios autenticados
   async createDeck(@Body('commanderName') commanderName: string, @Body('userId') userId: string) {
     try {
       const deck = await this.deckService.createDeck(commanderName, userId);
@@ -21,10 +21,10 @@ export class DeckController {
     }
   }
 
-  // Buscar todos os decks (acesso restrito ao admin)
+  // buscar todos os decks (acesso admin)
   @Get('all')
   @UseGuards(AuthGuard('jwt'), RolesGuard)
-  @Roles(Role.Admin) // Apenas admin pode acessar essa rota
+  @Roles(Role.Admin) // só admin pode acessar a rota
   async getAllDecks() {
     try {
       const decks = await this.deckService.getAllDecks();
@@ -34,10 +34,28 @@ export class DeckController {
     }
   }
 
-  // Buscar decks por ID de usuário (usuário admin pode ver decks de qualquer usuário)
+  @Get('my-decks')
+@UseGuards(AuthGuard('jwt'))
+async getMyDecks(@Request() req) {
+  const userId = req.user.userId;
+  console.log('User ID:', userId);
+  
+  try {
+    const decks = await this.deckService.getDecksByUserId(userId);
+    // se n tiver deck, retorna mensagem
+    if (decks.length === 0) {
+      return { message: 'Você não tem nenhum deck criado.' }; 
+    }
+    return decks;
+  } catch (error) {
+    throw new Error(`Erro ao buscar seus decks: ${error.message}`);
+  }
+}
+
+  // buscar VARIOS decks por ID de usuário
   @Get('user/:userId')
   @UseGuards(AuthGuard('jwt'), RolesGuard)
-  @Roles(Role.Admin, Role.User) // Admin e User podem acessar essa rota
+  @Roles(Role.Admin, Role.User) // admin e user podem acessar 
   async getDecksByUserId(@Param('userId') userId: string) {
     try {
       const decks = await this.deckService.getDecksByUserId(userId);
@@ -47,10 +65,10 @@ export class DeckController {
     }
   }
 
-  // Buscar deck por ID (admin pode ver qualquer deck)
+  // buscar UM deck por id
   @Get(':id')
   @UseGuards(AuthGuard('jwt'), RolesGuard)
-  @Roles(Role.Admin, Role.User) // Admin e User podem acessar essa rota
+  @Roles(Role.Admin, Role.User) // admin e user podem acessar 
   async getDeckById(@Param('id') id: string) {
     try {
       const deck = await this.deckService.getDeckById(id);

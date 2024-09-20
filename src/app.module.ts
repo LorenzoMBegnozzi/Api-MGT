@@ -19,7 +19,7 @@ import { DeckModule } from './deck/deck.module';
       { name: 'Deck', schema: DeckSchema },
     ]),
     CacheModule.register({
-      isGlobal: true, // Tornando o cache global
+      isGlobal: true, 
     }),
     AuthModule, 
     UsersModule, 

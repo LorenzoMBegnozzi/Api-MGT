@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
-import { JwtPayload } from '../guards/jwt-payload.interface'; // Ajuste o caminho conforme necessário
+import { JwtPayload } from '../guards/jwt-payload.interface'; 
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
@@ -13,6 +13,6 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   }
 
   async validate(payload: JwtPayload) {
-    return { userId: payload.userId, role: payload.role }; // Verifique se os campos correspondem ao payload
+    return { userId: payload.userId, role: payload.role }; 
   }
 }

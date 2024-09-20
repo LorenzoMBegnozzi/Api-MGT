@@ -14,13 +14,13 @@ export class DeckService {
     @InjectModel('Card') private cardModel: Model<Card>,
   ) {}
 
-  // Criar Deck baseado no comandante
+  // criar deck baseado no comandante
   async createDeck(commanderName: string, userId: string): Promise<Deck> {
     console.log(`Buscando comandante: ${commanderName}`);
 
     try {
       const commanderResponse = await firstValueFrom(
-        this.httpService.get(`https://api.scryfall.com/cards/named?exact=${commanderName}`),
+        this.httpService.get(`https://api.scryfall.com/cards/named?exact=${commanderName}`)
       );
 
       if (!commanderResponse.data) {
@@ -37,15 +37,19 @@ export class DeckService {
       const colorIdentity = commander.color_identity.join('');
       console.log('Identidade de cor:', colorIdentity);
 
+      // buscar cartas pela cor do comandante
       const cardsResponse = await firstValueFrom(
-        this.httpService.get(`https://api.scryfall.com/cards/search?q=color_identity<=${colorIdentity}&unique=cards&order=edhrec`),
+        this.httpService.get(
+          `https://api.scryfall.com/cards/search?q=color_identity<=${colorIdentity}&unique=cards&order=edhrec`
+        )
       );
 
       console.log('Cartas encontradas:', cardsResponse.data);
 
       const cards = cardsResponse.data.data;
-      const deckCards = cards.slice(0, 99);
+      const deckCards = cards.slice(0, 99); //primeiras 99 cartas
 
+      // salvar as cartas do db
       const savedCards = await Promise.all(
         deckCards.map(async card => {
           const newCard = new this.cardModel({
@@ -56,13 +60,14 @@ export class DeckService {
             imageUrl: card.image_uris?.normal || '',
           });
           return newCard.save();
-        }),
+        })
       );
 
+      // criar o deck e mandar para o usuario dono
       const deck = new this.deckModel({
         commander: commander.name,
-        cards: savedCards.map(savedCard => savedCard._id),
-        user: userId, // Use o userId passado como argumento
+        cards: savedCards.map(savedCard => savedCard._id), 
+        user: userId,
       });
 
       console.log('Deck criado:', deck);
@@ -74,7 +79,7 @@ export class DeckService {
     }
   }
 
-  // Buscar decks por ID do usuário
+  // buscar VARIOS decks por ID de usuario
   async getDecksByUserId(userId: string): Promise<Deck[]> {
     try {
       const decks = await this.deckModel.find({ user: userId }).populate('cards').exec();
@@ -85,7 +90,7 @@ export class DeckService {
     }
   }
 
-  // Buscar deck por ID (admin e usuário podem acessar)
+  // buscar UM deck por ID (admin e usuario podem )
   async getDeckById(id: string): Promise<Deck> {
     try {
       const deck = await this.deckModel.findById(id).populate('cards').exec();
@@ -99,7 +104,7 @@ export class DeckService {
     }
   }
 
-  // Buscar todos os decks (apenas admin)
+  // buscar todos os decks (admin)
   async getAllDecks(): Promise<Deck[]> {
     try {
       const decks = await this.deckModel.find().populate('cards').exec();
