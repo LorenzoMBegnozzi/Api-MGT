@@ -1,6 +1,6 @@
 import { Injectable, CanActivate, ExecutionContext, ForbiddenException } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
-import { Role } from '../decorators/role.enum'; // Ajuste o caminho conforme necessário
+import { Role } from '../decorators/role.enum';
 
 @Injectable()
 export class RolesGuard implements CanActivate {
@@ -9,19 +9,19 @@ export class RolesGuard implements CanActivate {
   canActivate(context: ExecutionContext): boolean {
     const roles = this.reflector.get<Role[]>('roles', context.getHandler());
     if (!roles) {
-      return true;
+      return true; // Se não houver roles definidas, permite acesso
     }
 
     const request = context.switchToHttp().getRequest();
     const user = request.user;
 
-    if (!user) {
-      throw new ForbiddenException('Usuário não autenticado');
+    if (!user || !user.role) {
+      throw new ForbiddenException('Usuário não autenticado ou sem função definida');
     }
 
-    const userRole = user.role;
+    const userRoles = Array.isArray(user.role) ? user.role : [user.role];
 
-    if (!roles.includes(userRole)) {
+    if (!roles.some(role => userRoles.includes(role))) {
       throw new ForbiddenException('Acesso negado. Somente usuários com permissão apropriada podem acessar essa rota.');
     }
 

@@ -14,6 +14,7 @@ export class DeckService {
     @InjectModel('Card') private cardModel: Model<Card>,
   ) {}
 
+  // Criar Deck baseado no comandante
   async createDeck(commanderName: string, userId: string): Promise<Deck> {
     console.log(`Buscando comandante: ${commanderName}`);
 
@@ -73,12 +74,38 @@ export class DeckService {
     }
   }
 
+  // Buscar decks por ID do usuário
   async getDecksByUserId(userId: string): Promise<Deck[]> {
     try {
       const decks = await this.deckModel.find({ user: userId }).populate('cards').exec();
       return decks;
     } catch (error) {
       console.error('Erro ao buscar decks pelo ID do usuário:', error);
+      throw new InternalServerErrorException('Erro ao buscar decks');
+    }
+  }
+
+  // Buscar deck por ID (admin e usuário podem acessar)
+  async getDeckById(id: string): Promise<Deck> {
+    try {
+      const deck = await this.deckModel.findById(id).populate('cards').exec();
+      if (!deck) {
+        throw new NotFoundException(`Deck com ID ${id} não encontrado.`);
+      }
+      return deck;
+    } catch (error) {
+      console.error(`Erro ao buscar o deck com ID ${id}:`, error);
+      throw new InternalServerErrorException('Erro ao buscar deck');
+    }
+  }
+
+  // Buscar todos os decks (apenas admin)
+  async getAllDecks(): Promise<Deck[]> {
+    try {
+      const decks = await this.deckModel.find().populate('cards').exec();
+      return decks;
+    } catch (error) {
+      console.error('Erro ao buscar todos os decks:', error);
       throw new InternalServerErrorException('Erro ao buscar decks');
     }
   }

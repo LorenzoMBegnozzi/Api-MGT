@@ -8,10 +8,10 @@ import { UpdateUserDto } from '../dto/update-user.dto';
 
 @Injectable()
 export class UsersService {
-  constructor(@InjectModel('User') private readonly userModel: Model<User>) {}
+  constructor(@InjectModel('User') private readonly userModel: Model<User>) { }
 
   async create(createUserDto: CreateUserDto): Promise<User> {
-    const { username, password, email } = createUserDto;
+    const { username, password, email, role } = createUserDto;
 
     const existingUser = await this.userModel.findOne({ $or: [{ username }, { email }] });
     if (existingUser) {
@@ -24,6 +24,7 @@ export class UsersService {
       username,
       password: hashedPassword,
       email,
+      role, // Adicione esta linha
     });
 
     return await newUser.save();
