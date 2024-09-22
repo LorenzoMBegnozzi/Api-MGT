@@ -41,29 +41,32 @@ export class ScryfallController {
     }
   }
 
-  @UseGuards(JwtAuthGuard)
+  // scryfall.controller.ts
   @Post('deck')
-  async createDeck(@Body('commanderId') commanderId: string, @Req() req) {
+  @UseGuards(JwtAuthGuard)
+  async createDeck(@Body('commanderId') commanderId: string, @Req() req: any) {
     try {
-      console.log('Request User:', req.user);
-
       const userId = req.user?.userId;
-
       if (!userId) {
         throw new HttpException('Usuário não autenticado', HttpStatus.UNAUTHORIZED);
       }
 
-      //comandante pelo ID
+      if (!commanderId) {
+        throw new HttpException('Comandante é necessário', HttpStatus.BAD_REQUEST);
+      }
+
+      // Busca o comandante pelo ID
       const commander = await this.scryfallService.getCardById(commanderId);
       if (!commander || !commander.colors) {
         throw new HttpException('Comandante não encontrado ou dados inválidos', HttpStatus.NOT_FOUND);
       }
 
-      // acha deck pelas cores do comandante
+      // Busca o deck baseado nas cores do comandante
       const deck = await this.scryfallService.getDeckByCommander(commander.colors);
 
-      // add o comandante ao deck
-      deck.push({
+      // Adiciona o comandante ao início do deck
+      deck.unshift({
+        _id: commander.id,
         name: commander.name,
         type: commander.type_line,
         manaCost: commander.mana_cost,
@@ -71,19 +74,22 @@ export class ScryfallController {
         imageUrl: commander.image_uris?.normal || null,
       });
 
-      // salva o deck em arquivo
+      // Salva o deck em arquivo (opcional)
       await this.scryfallService.saveDeckToFile(deck);
 
-      // salva o deck no db
-      console.log('Salvando deck com userId:', userId);
+      // Salva o deck no banco de dados
       const savedDeck = await this.scryfallService.saveDeckToDatabase(deck, userId, commander.name);
 
-      return savedDeck;
+      return {
+        message: 'Deck criado com sucesso',
+        deck: savedDeck,
+      };
     } catch (error) {
       console.error('Erro interno do servidor:', error.message);
       throw new HttpException('Erro interno do servidor', HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }
+
 
   @Get('search')
   async searchCard(@Query('q') query: string, @Query('page') page: number = 1) {

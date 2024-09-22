@@ -66,22 +66,47 @@ export class ScryfallService {
     }
   }
 
-  // salva o deck no mongo
-  async saveDeckToDatabase(deck: any[], userId: string, commander: string): Promise<DeckDocument> {
-    try {
-      const deckDocument = new this.deckModel({
-        user: userId,
-        commander: commander,
-        cards: this.filterDeck(deck),
-      });
-      const savedDeck = await deckDocument.save();
-      console.log('Deck salvo com sucesso:', savedDeck);
-      return savedDeck;
-    } catch (error) {
-      console.error('Erro ao salvar deck no banco de dados:', error);
-      throw new HttpException('Erro ao salvar deck', HttpStatus.INTERNAL_SERVER_ERROR);
-    }
+  // scryfall.service.ts
+async saveDeckToDatabase(deck: any[], userId: string, commanderName: string): Promise<DeckDocument> {
+  try {
+    // Primeiro, salve todas as cartas na coleção Card
+    const savedCards = await Promise.all(deck.map(async (card) => {
+      // Verifique se a carta já existe na coleção Card
+      let existingCard = await this.cardModel.findOne({ scryfallId: card._id }).exec();
+      if (!existingCard) {
+        // Crie um novo documento de carta
+        const newCard = new this.cardModel({
+          scryfallId: card._id,
+          name: card.name,
+          type: card.type,
+          manaCost: card.manaCost,
+          colors: card.colors,
+          imageUrl: card.imageUrl,
+        });
+        existingCard = await newCard.save();
+      }
+      return existingCard;
+    }));
+
+    // Agora, obtenha os ObjectIds das cartas salvas
+    const cardIds = savedCards.map(card => card._id);
+
+    // Crie o documento do deck
+    const deckDocument = new this.deckModel({
+      user: userId,
+      commander: commanderName,
+      cards: cardIds,
+    });
+
+    const savedDeck = await deckDocument.save();
+    console.log('Deck salvo com sucesso:', savedDeck);
+    return savedDeck;
+  } catch (error) {
+    console.error('Erro ao salvar deck no banco de dados:', error);
+    throw new HttpException('Erro ao salvar deck', HttpStatus.INTERNAL_SERVER_ERROR);
   }
+}
+
 
   // salva o deck em um arquivo
   async saveDeckToFile(deck: any[]): Promise<void> {

@@ -1,9 +1,12 @@
-import { Controller, Post, Body, Get, UseGuards, Request, Param } from '@nestjs/common';
+import { Controller, Post, Body, Get, UseGuards, Request, Param, BadRequestException, InternalServerErrorException } from '@nestjs/common';
 import { DeckService } from './deck.service';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Role } from '../auth/decorators/role.enum';
 import { AuthGuard } from '@nestjs/passport';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard'; 
+import { validateCommanderDeck } from './schemas/commander-validator';
+import { DeckJson } from 'src/interfaces/deck.interface';
 
 @Controller('decks')
 export class DeckController {
@@ -11,13 +14,34 @@ export class DeckController {
 
   // criar um deck
   @Post('create')
-  @UseGuards(AuthGuard('jwt')) // rota para usuarios autenticados
+  @UseGuards(AuthGuard('jwt')) // rota para usuários autenticados
   async createDeck(@Body('commanderName') commanderName: string, @Body('userId') userId: string) {
     try {
       const deck = await this.deckService.createDeck(commanderName, userId);
       return deck;
     } catch (error) {
-      throw new Error(`Erro ao criar o deck: ${error.message}`);
+      throw new InternalServerErrorException(`Erro ao criar o deck: ${error.message}`);
+    }
+  }
+
+  @Post('import')
+  @UseGuards(JwtAuthGuard) // Apenas usuários autenticados podem importar baralhos
+  async importDeck(@Body() deckJson: DeckJson, @Request() req) {
+    const userId = req.user.userId;
+    const { commander, cards } = deckJson;
+
+    // Valida se o deck está conforme as regras do Commander
+    const isValid = validateCommanderDeck(commander, cards);
+    if (!isValid.valid) {
+      throw new BadRequestException(isValid.message);
+    }
+
+    try {
+      // Salvar o deck no banco de dados se for válido
+      const savedDeck = await this.deckService.createCustomDeck(commander, cards, userId);
+      return savedDeck;
+    } catch (error) {
+      throw new InternalServerErrorException(`Erro ao importar o deck: ${error.message}`);
     }
   }
 
@@ -30,29 +54,29 @@ export class DeckController {
       const decks = await this.deckService.getAllDecks();
       return decks;
     } catch (error) {
-      throw new Error(`Erro ao buscar todos os decks: ${error.message}`);
+      throw new InternalServerErrorException(`Erro ao buscar todos os decks: ${error.message}`);
     }
   }
 
   @Get('my-decks')
-@UseGuards(AuthGuard('jwt'))
-async getMyDecks(@Request() req) {
-  const userId = req.user.userId;
-  console.log('User ID:', userId);
-  
-  try {
-    const decks = await this.deckService.getDecksByUserId(userId);
-    // se n tiver deck, retorna mensagem
-    if (decks.length === 0) {
-      return { message: 'Você não tem nenhum deck criado.' }; 
+  @UseGuards(AuthGuard('jwt'))
+  async getMyDecks(@Request() req) {
+    const userId = req.user.userId;
+    console.log('User ID:', userId);
+    
+    try {
+      const decks = await this.deckService.getDecksByUserId(userId);
+      // se não tiver deck, retorna mensagem
+      if (decks.length === 0) {
+        return { message: 'Você não tem nenhum deck criado.' }; 
+      }
+      return decks;
+    } catch (error) {
+      throw new InternalServerErrorException(`Erro ao buscar seus decks: ${error.message}`);
     }
-    return decks;
-  } catch (error) {
-    throw new Error(`Erro ao buscar seus decks: ${error.message}`);
   }
-}
 
-  // buscar VARIOS decks por ID de usuário
+  // buscar VÁRIOS decks por ID de usuário
   @Get('user/:userId')
   @UseGuards(AuthGuard('jwt'), RolesGuard)
   @Roles(Role.Admin, Role.User) // admin e user podem acessar 
@@ -61,7 +85,7 @@ async getMyDecks(@Request() req) {
       const decks = await this.deckService.getDecksByUserId(userId);
       return decks;
     } catch (error) {
-      throw new Error(`Erro ao buscar decks do usuário ${userId}: ${error.message}`);
+      throw new InternalServerErrorException(`Erro ao buscar decks do usuário ${userId}: ${error.message}`);
     }
   }
 
@@ -74,7 +98,7 @@ async getMyDecks(@Request() req) {
       const deck = await this.deckService.getDeckById(id);
       return deck;
     } catch (error) {
-      throw new Error(`Erro ao buscar o deck com ID ${id}: ${error.message}`);
+      throw new InternalServerErrorException(`Erro ao buscar o deck com ID ${id}: ${error.message}`);
     }
   }
 }

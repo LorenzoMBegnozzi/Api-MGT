@@ -10,9 +10,14 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       secretOrKey: process.env.JWT_SECRET || 'defaultSecret',
     });
+
+    if (!process.env.JWT_SECRET) {
+      console.warn('WARNING: JWT_SECRET is not defined. Using default secret, which is not secure!');
+    }
   }
 
   async validate(payload: JwtPayload) {
+    // Aqui você pode adicionar mais verificações ou consultar o banco de dados se necessário
     return { userId: payload.userId, role: payload.role }; 
   }
 }

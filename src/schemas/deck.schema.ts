@@ -4,7 +4,7 @@ import { Card } from './card.schema';
 export const DeckSchema = new Schema({
   user: { type: Types.ObjectId, ref: 'User', required: true },
   commander: { type: String, required: true },
-  cards: [{ type: String }], 
+  cards: [{ type: Types.ObjectId, ref: 'Card' }], 
   createdAt: { type: Date, default: Date.now },
 });
 

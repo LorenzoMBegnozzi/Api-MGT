@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, InternalServerErrorException } from '@nestjs/common';
+import { Injectable, NotFoundException, InternalServerErrorException, BadRequestException } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
 import { firstValueFrom } from 'rxjs';
 import { InjectModel } from '@nestjs/mongoose';
@@ -12,46 +12,22 @@ export class DeckService {
     private readonly httpService: HttpService,
     @InjectModel('Deck') private deckModel: Model<Deck>,
     @InjectModel('Card') private cardModel: Model<Card>,
-  ) {}
+  ) { }
 
-  // criar deck baseado no comandante
-  async createDeck(commanderName: string, userId: string): Promise<Deck> {
-    console.log(`Buscando comandante: ${commanderName}`);
-
+  // Função que implementa a criação de um deck customizado via JSON
+  async createCustomDeck(commander: any, cards: any[], userId: string): Promise<Deck> {
     try {
-      const commanderResponse = await firstValueFrom(
-        this.httpService.get(`https://api.scryfall.com/cards/named?exact=${commanderName}`)
-      );
-
-      if (!commanderResponse.data) {
-        throw new NotFoundException(`Comandante ${commanderName} não encontrado.`);
+      // Verificar se o comandante tem a identidade de cor definida
+      if (!commander || !commander.color_identity || commander.color_identity.length === 0) {
+        throw new NotFoundException(`O comandante fornecido não possui identidade de cor.`);
       }
-
-      const commander = commanderResponse.data;
-      console.log('Comandante encontrado:', commander);
-
-      if (!commander.color_identity || commander.color_identity.length === 0) {
-        throw new NotFoundException(`Comandante ${commanderName} não possui identidade de cor.`);
-      }
-
-      const colorIdentity = commander.color_identity.join('');
-      console.log('Identidade de cor:', colorIdentity);
-
-      // buscar cartas pela cor do comandante
-      const cardsResponse = await firstValueFrom(
-        this.httpService.get(
-          `https://api.scryfall.com/cards/search?q=color_identity<=${colorIdentity}&unique=cards&order=edhrec`
-        )
-      );
-
-      console.log('Cartas encontradas:', cardsResponse.data);
-
-      const cards = cardsResponse.data.data;
-      const deckCards = cards.slice(0, 99); //primeiras 99 cartas
-
-      // salvar as cartas do db
+  
+      // Filtrar cartas válidas
+      const validCards = cards.filter(card => card && card.name && card.type_line);
+  
+      // Salvar as cartas no banco de dados
       const savedCards = await Promise.all(
-        deckCards.map(async card => {
+        validCards.map(async (card) => {
           const newCard = new this.cardModel({
             name: card.name,
             type: card.type_line,
@@ -59,25 +35,106 @@ export class DeckService {
             colors: card.colors,
             imageUrl: card.image_uris?.normal || '',
           });
-          return newCard.save();
+          return await newCard.save();
         })
       );
-
-      // criar o deck e mandar para o usuario dono
+  
+      // Criar o deck com o comandante e as cartas salvas
       const deck = new this.deckModel({
         commander: commander.name,
-        cards: savedCards.map(savedCard => savedCard._id), 
+        cards: savedCards.map((savedCard) => savedCard._id),
         user: userId,
       });
-
-      console.log('Deck criado:', deck);
-
+  
+      console.log('Deck customizado criado:', deck);
       return await deck.save();
     } catch (error) {
-      console.error('Erro ao criar deck:', error);
-      throw new InternalServerErrorException('Erro ao criar deck');
+      console.error('Erro ao criar o deck customizado:', error);
+      throw new InternalServerErrorException('Erro ao criar deck customizado.');
     }
   }
+  
+
+  // Função existente para criar deck baseado no comandante (API externa)
+ // Função existente para criar deck baseado no comandante (API externa)
+async createDeck(commanderName: string, userId: string): Promise<Deck> {
+  console.log(`Buscando comandante: ${commanderName}`);
+
+  try {
+    const commanderResponse = await firstValueFrom(
+      this.httpService.get(`https://api.scryfall.com/cards/named?exact=${commanderName}`)
+    );
+
+    if (!commanderResponse.data) {
+      throw new NotFoundException(`Comandante ${commanderName} não encontrado.`);
+    }
+
+    const commander = commanderResponse.data;
+    console.log('Comandante encontrado:', commander);
+
+    if (!commander.color_identity || commander.color_identity.length === 0) {
+      throw new NotFoundException(`Comandante ${commanderName} não possui identidade de cor.`);
+    }
+
+    const colorIdentity = commander.color_identity.join('');
+    console.log('Identidade de cor:', colorIdentity);
+
+    // buscar cartas pela cor do comandante
+    const cardsResponse = await firstValueFrom(
+      this.httpService.get(
+        `https://api.scryfall.com/cards/search?q=color_identity<=${colorIdentity}&unique=cards&order=edhrec`
+      )
+    );
+
+    console.log('Cartas encontradas:', cardsResponse.data);
+
+    const cards = cardsResponse.data.data;
+    const deckCards = cards.slice(0, 99); // primeiras 99 cartas
+
+    // salvar as cartas do db
+    const savedCards = await Promise.all(
+      deckCards.map(async card => {
+        if (!card.id) {
+          throw new BadRequestException(`A carta '${card.name}' não possui um ID definido.`);
+        }
+
+        try {
+          const newCard = new this.cardModel({
+            name: card.name,
+            type: card.type_line,
+            manaCost: card.mana_cost,
+            colors: card.colors,
+            imageUrl: card.image_uris?.normal || '',
+          });
+
+          return await newCard.save();
+        } catch (error) {
+          console.error(`Erro ao salvar a carta '${card.name}': ${error.message}`);
+          throw new InternalServerErrorException(`Erro ao salvar a carta '${card.name}'.`);
+        }
+      })
+    );
+
+    // criar o deck e mandar para o usuário dono
+    const deck = new this.deckModel({
+      commander: commander.name,
+      cards: savedCards.map(savedCard => savedCard._id),
+      user: userId,
+    });
+
+    // Verificar se todos os IDs das cartas estão definidos
+    if (!deck.cards.every(cardId => cardId)) {
+      throw new BadRequestException('Um ou mais IDs de cartas são indefinidos.');
+    }
+
+    console.log('Deck criado:', deck);
+    return await deck.save();
+  } catch (error) {
+    console.error('Erro ao criar deck:', error);
+    throw new InternalServerErrorException('Erro ao criar deck');
+  }
+}
+
 
   // buscar VARIOS decks por ID de usuario
   async getDecksByUserId(userId: string): Promise<Deck[]> {
