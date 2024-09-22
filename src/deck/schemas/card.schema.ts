@@ -5,13 +5,15 @@ export interface Card extends Document {
   type: string;
   manaCost: string;
   colors: string[];
-  imageUrl?: string;
+  scryfallId: string; // Certifique-se de que este campo esteja aqui
+  imageUrl: string;
 }
 
 export const CardSchema = new Schema({
   name: { type: String, required: true },
   type: { type: String, required: true },
-  manaCost: { type: String },
-  colors: [{ type: String }],
-  imageUrl: { type: String }
+  manaCost: { type: String, required: true },
+  colors: { type: [String], required: true },
+  scryfallId: { type: String, required: true }, // Adicione esta linha se não estiver lá
+  imageUrl: { type: String, required: true },
 });

@@ -4,13 +4,13 @@ import { Roles } from '../auth/decorators/roles.decorator';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Role } from '../auth/decorators/role.enum';
 import { AuthGuard } from '@nestjs/passport';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard'; 
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { validateCommanderDeck } from './schemas/commander-validator';
 import { DeckJson } from 'src/interfaces/deck.interface';
 
 @Controller('decks')
 export class DeckController {
-  constructor(private readonly deckService: DeckService) {}
+  constructor(private readonly deckService: DeckService) { }
 
   // criar um deck
   @Post('create')
@@ -25,10 +25,19 @@ export class DeckController {
   }
 
   @Post('import')
-  @UseGuards(JwtAuthGuard) // Apenas usuários autenticados podem importar baralhos
+  @UseGuards(JwtAuthGuard)
   async importDeck(@Body() deckJson: DeckJson, @Request() req) {
     const userId = req.user.userId;
     const { commander, cards } = deckJson;
+
+    // Verifica se cards existe e é um array
+    if (!Array.isArray(cards) || cards.length < 1 || cards.length > 99) {
+      throw new BadRequestException('O deck deve conter entre 1 e 99 cartas além do comandante.');
+    }
+
+    if (typeof commander !== 'object' || !commander.name) {
+      throw new BadRequestException('O comandante deve ser um objeto válido com uma propriedade "name".');
+    }
 
     // Valida se o deck está conforme as regras do Commander
     const isValid = validateCommanderDeck(commander, cards);
@@ -37,7 +46,6 @@ export class DeckController {
     }
 
     try {
-      // Salvar o deck no banco de dados se for válido
       const savedDeck = await this.deckService.createCustomDeck(commander, cards, userId);
       return savedDeck;
     } catch (error) {
@@ -63,12 +71,12 @@ export class DeckController {
   async getMyDecks(@Request() req) {
     const userId = req.user.userId;
     console.log('User ID:', userId);
-    
+
     try {
       const decks = await this.deckService.getDecksByUserId(userId);
       // se não tiver deck, retorna mensagem
       if (decks.length === 0) {
-        return { message: 'Você não tem nenhum deck criado.' }; 
+        return { message: 'Você não tem nenhum deck criado.' };
       }
       return decks;
     } catch (error) {

@@ -14,6 +14,7 @@ export interface Card {
   type: string;
   manaCost?: string;
   colors?: string[];
+  scryfallId: string;
   imageUrl?: string;
 }
 
