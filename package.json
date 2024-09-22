@@ -17,7 +17,8 @@
     "test:watch": "jest --watch",
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
-    "test:e2e": "jest --config ./test/jest-e2e.json"
+    "test:e2e": "jest --config ./test/jest-e2e.json",
+    "autocannon-test": "autocannon -c 100 -d 5 -p 10 http://localhost:3000/scryfall/deck"
   },
   "dependencies": {
     "@nestjs/axios": "^3.0.3",
@@ -28,6 +29,7 @@
     "@nestjs/mongoose": "^10.0.10",
     "@nestjs/passport": "^10.0.3",
     "@nestjs/platform-express": "^10.0.0",
+    "@types/autocannon": "^7.12.5",
     "axios": "^1.7.5",
     "bcrypt": "^5.1.1",
     "cache-manager": "^5.7.6",

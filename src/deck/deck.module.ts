@@ -16,6 +16,6 @@ import { HttpModule } from '@nestjs/axios';
   ],
   providers: [DeckService],
   controllers: [DeckController],
-  exports: [MongooseModule], 
+  exports: [MongooseModule],
 })
-export class DeckModule {}
+export class DeckModule { }

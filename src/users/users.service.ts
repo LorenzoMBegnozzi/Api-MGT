@@ -42,13 +42,13 @@ export class UsersService {
   async findOneByUsername(username: string): Promise<User | undefined> {
     console.log(`Encontrando usuário com nome de usuário: ${username}`);
     const user = await this.userModel.findOne({ username });
-  
+
     if (!user) {
       throw new NotFoundException('Usuário não encontrado');
     }
-  
-    console.log('Usuário encontrado:', user); 
-  
+
+    console.log('Usuário encontrado:', user);
+
     return user;
   }
 
@@ -114,6 +114,6 @@ export class UsersService {
 
   async getUserRole(userId: string): Promise<string> {
     const user = await this.findOneById(userId);
-    return user.role; 
+    return user.role;
   }
 }

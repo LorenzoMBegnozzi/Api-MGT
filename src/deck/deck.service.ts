@@ -20,10 +20,8 @@ export class DeckService {
         throw new NotFoundException(`O comandante fornecido não possui identidade de cor.`);
       }
 
-      // Log para verificar o conteúdo das cartas recebidas
       console.log('Cartas recebidas:', cards);
 
-      // Filtra as cartas válidas
       const validCards = cards.filter(card => {
         console.log('Verificando carta:', card);
         return card && card.name && card.type;
@@ -31,7 +29,6 @@ export class DeckService {
 
       console.log('Cartas válidas:', validCards);
 
-      // Tenta salvar cada carta e captura erros
       const savedCards = await Promise.all(
         validCards.map(async (card) => {
           try {
@@ -71,8 +68,6 @@ export class DeckService {
     }
   }
 
-
-
   private async getCardFromScryfall(cardName: string) {
     try {
       const response = await firstValueFrom(
@@ -81,13 +76,10 @@ export class DeckService {
       return response.data;
     } catch (error) {
       console.error(`Erro ao buscar a carta '${cardName}':`, error);
-      return null; // Retorna null se não encontrar a carta
+      return null;
     }
   }
 
-
-  // Função existente para criar deck baseado no comandante (API externa)
-  // Função existente para criar deck baseado no comandante (API externa)
   async createDeck(commanderName: string, userId: string): Promise<Deck> {
     console.log(`Buscando comandante: ${commanderName}`);
 
@@ -153,7 +145,7 @@ export class DeckService {
         user: userId,
       });
 
-      // Verificar se todos os IDs das cartas estão definidos
+      // verifica se todos os IDs das cartas estão definidos
       if (!deck.cards.every(cardId => cardId)) {
         throw new BadRequestException('Um ou mais IDs de cartas são indefinidos.');
       }
@@ -165,7 +157,6 @@ export class DeckService {
       throw new InternalServerErrorException('Erro ao criar deck');
     }
   }
-
 
   // buscar VARIOS decks por ID de usuario
   async getDecksByUserId(userId: string): Promise<Deck[]> {

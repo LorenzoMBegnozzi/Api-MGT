@@ -9,6 +9,6 @@ export interface Deck extends Document {
 export const DeckSchema = new Schema({
   user: { type: Types.ObjectId, ref: 'User', required: true },
   commander: { type: String, required: true },
-  cards: [{ type: Types.ObjectId, ref: 'Card' }], 
+  cards: [{ type: Types.ObjectId, ref: 'Card' }],
   createdAt: { type: Date, default: Date.now },
 });

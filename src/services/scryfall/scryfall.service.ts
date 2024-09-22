@@ -66,15 +66,11 @@ export class ScryfallService {
     }
   }
 
-  // scryfall.service.ts
 async saveDeckToDatabase(deck: any[], userId: string, commanderName: string): Promise<DeckDocument> {
   try {
-    // Primeiro, salve todas as cartas na coleção Card
     const savedCards = await Promise.all(deck.map(async (card) => {
-      // Verifique se a carta já existe na coleção Card
       let existingCard = await this.cardModel.findOne({ scryfallId: card._id }).exec();
       if (!existingCard) {
-        // Crie um novo documento de carta
         const newCard = new this.cardModel({
           scryfallId: card._id,
           name: card.name,
@@ -88,10 +84,8 @@ async saveDeckToDatabase(deck: any[], userId: string, commanderName: string): Pr
       return existingCard;
     }));
 
-    // Agora, obtenha os ObjectIds das cartas salvas
     const cardIds = savedCards.map(card => card._id);
 
-    // Crie o documento do deck
     const deckDocument = new this.deckModel({
       user: userId,
       commander: commanderName,
@@ -107,8 +101,6 @@ async saveDeckToDatabase(deck: any[], userId: string, commanderName: string): Pr
   }
 }
 
-
-  // salva o deck em um arquivo
   async saveDeckToFile(deck: any[]): Promise<void> {
     try {
       const filePath = path.join(__dirname, 'deck.json');
@@ -120,7 +112,7 @@ async saveDeckToDatabase(deck: any[], userId: string, commanderName: string): Pr
     }
   }
 
-  // Busca o deck baseado no comandante
+  // busca o deck baseado no comandante
   async getDeckByCommander(colors: string[]): Promise<any[]> {
     try {
       const colorQuery = colors.join('');

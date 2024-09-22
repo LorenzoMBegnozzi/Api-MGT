@@ -41,7 +41,6 @@ export class ScryfallController {
     }
   }
 
-  // scryfall.controller.ts
   @Post('deck')
   @UseGuards(JwtAuthGuard)
   async createDeck(@Body('commanderId') commanderId: string, @Req() req: any) {
@@ -55,16 +54,16 @@ export class ScryfallController {
         throw new HttpException('Comandante é necessário', HttpStatus.BAD_REQUEST);
       }
 
-      // Busca o comandante pelo ID
+      // busca o comandante pelo ID
       const commander = await this.scryfallService.getCardById(commanderId);
       if (!commander || !commander.colors) {
         throw new HttpException('Comandante não encontrado ou dados inválidos', HttpStatus.NOT_FOUND);
       }
 
-      // Busca o deck baseado nas cores do comandante
+      // busca o deck baseado nas cores do comandante
       const deck = await this.scryfallService.getDeckByCommander(commander.colors);
 
-      // Adiciona o comandante ao início do deck
+      // add o comandante ao inicio do deck
       deck.unshift({
         _id: commander.id,
         name: commander.name,
@@ -74,10 +73,10 @@ export class ScryfallController {
         imageUrl: commander.image_uris?.normal || null,
       });
 
-      // Salva o deck em arquivo (opcional)
+      // salva o deck em arquivo
       await this.scryfallService.saveDeckToFile(deck);
 
-      // Salva o deck no banco de dados
+      // salva o deck no banco 
       const savedDeck = await this.scryfallService.saveDeckToDatabase(deck, userId, commander.name);
 
       return {
@@ -89,7 +88,6 @@ export class ScryfallController {
       throw new HttpException('Erro interno do servidor', HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }
-
 
   @Get('search')
   async searchCard(@Query('q') query: string, @Query('page') page: number = 1) {

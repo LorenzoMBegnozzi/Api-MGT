@@ -14,7 +14,7 @@ export class DeckController {
 
   // criar um deck
   @Post('create')
-  @UseGuards(AuthGuard('jwt')) // rota para usuários autenticados
+  @UseGuards(AuthGuard('jwt'))
   async createDeck(@Body('commanderName') commanderName: string, @Body('userId') userId: string) {
     try {
       const deck = await this.deckService.createDeck(commanderName, userId);
@@ -30,7 +30,6 @@ export class DeckController {
     const userId = req.user.userId;
     const { commander, cards } = deckJson;
 
-    // Verifica se cards existe e é um array
     if (!Array.isArray(cards) || cards.length < 1 || cards.length > 99) {
       throw new BadRequestException('O deck deve conter entre 1 e 99 cartas além do comandante.');
     }
@@ -39,7 +38,7 @@ export class DeckController {
       throw new BadRequestException('O comandante deve ser um objeto válido com uma propriedade "name".');
     }
 
-    // Valida se o deck está conforme as regras do Commander
+    // regras do Commander
     const isValid = validateCommanderDeck(commander, cards);
     if (!isValid.valid) {
       throw new BadRequestException(isValid.message);
@@ -56,7 +55,7 @@ export class DeckController {
   // buscar todos os decks (acesso admin)
   @Get('all')
   @UseGuards(AuthGuard('jwt'), RolesGuard)
-  @Roles(Role.Admin) // só admin pode acessar a rota
+  @Roles(Role.Admin)
   async getAllDecks() {
     try {
       const decks = await this.deckService.getAllDecks();
