@@ -87,7 +87,7 @@ export class DeckController {
     }
   }
 
-  // VÁRIOS decks por ID de usuário
+  // VÁRIOS decks por ID de usuario
   @Get('user/:userId')
   @UseGuards(AuthGuard('jwt'), RolesGuard)
   @Roles(Role.Admin, Role.User) // admin e user podem acessar
