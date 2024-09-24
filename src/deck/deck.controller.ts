@@ -1,4 +1,15 @@
-import { Controller, Post, Body, Get, UseGuards, Request, Param, BadRequestException, InternalServerErrorException } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Body,
+  Get,
+  UseGuards,
+  Request,
+  Param,
+  BadRequestException,
+  InternalServerErrorException,
+  UseInterceptors,
+} from '@nestjs/common';
 import { DeckService } from './deck.service';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { RolesGuard } from '../auth/guards/roles.guard';
@@ -7,12 +18,13 @@ import { AuthGuard } from '@nestjs/passport';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { validateCommanderDeck } from './schemas/commander-validator';
 import { DeckJson } from 'src/interfaces/deck.interface';
+import { CacheInterceptor } from '@nestjs/cache-manager'; 
 
 @Controller('decks')
 export class DeckController {
-  constructor(private readonly deckService: DeckService) { }
+  constructor(private readonly deckService: DeckService) {}
 
-  // criar um deck
+  // Criar um deck
   @Post('create')
   @UseGuards(AuthGuard('jwt'))
   async createDeck(@Body('commanderName') commanderName: string, @Body('userId') userId: string) {
@@ -38,7 +50,7 @@ export class DeckController {
       throw new BadRequestException('O comandante deve ser um objeto válido com uma propriedade "name".');
     }
 
-    // regras do Commander
+    // Regras do Commander
     const isValid = validateCommanderDeck(commander, cards);
     if (!isValid.valid) {
       throw new BadRequestException(isValid.message);
@@ -52,7 +64,7 @@ export class DeckController {
     }
   }
 
-  // buscar todos os decks (acesso admin)
+  // Buscar todos os decks (acesso admin)
   @Get('all')
   @UseGuards(AuthGuard('jwt'), RolesGuard)
   @Roles(Role.Admin)
@@ -67,13 +79,14 @@ export class DeckController {
 
   @Get('my-decks')
   @UseGuards(AuthGuard('jwt'))
+  @UseInterceptors(CacheInterceptor) // Aplicando o CacheInterceptor apenas para este método
   async getMyDecks(@Request() req) {
     const userId = req.user.userId;
     console.log('User ID:', userId);
 
     try {
       const decks = await this.deckService.getDecksByUserId(userId);
-      // se não tiver deck, retorna mensagem
+      // Se não tiver deck, retorna mensagem
       if (decks.length === 0) {
         return { message: 'Você não tem nenhum deck criado.' };
       }
@@ -83,10 +96,10 @@ export class DeckController {
     }
   }
 
-  // buscar VÁRIOS decks por ID de usuário
+  // Buscar VÁRIOS decks por ID de usuário
   @Get('user/:userId')
   @UseGuards(AuthGuard('jwt'), RolesGuard)
-  @Roles(Role.Admin, Role.User) // admin e user podem acessar 
+  @Roles(Role.Admin, Role.User) // Admin e user podem acessar
   async getDecksByUserId(@Param('userId') userId: string) {
     try {
       const decks = await this.deckService.getDecksByUserId(userId);
@@ -96,10 +109,10 @@ export class DeckController {
     }
   }
 
-  // buscar UM deck por id
+  // Buscar UM deck por id
   @Get(':id')
   @UseGuards(AuthGuard('jwt'), RolesGuard)
-  @Roles(Role.Admin, Role.User) // admin e user podem acessar 
+  @Roles(Role.Admin, Role.User) // Admin e user podem acessar
   async getDeckById(@Param('id') id: string) {
     try {
       const deck = await this.deckService.getDeckById(id);

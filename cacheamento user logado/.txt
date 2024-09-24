@@ -1,0 +1,53 @@
+===========================================COM CACHEAMENTO==================================
+
+$ autocannon -c 100 -d 5 -p 10 -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6IkFkbWluIiwidXNlcklkIjoiNjZmMDU4MTk2ZWI0YTVhYTU3ZTZiMWFiIiwicm9sZSI6ImFkbWluIiwiaWF0IjoxNzI3MTUyODMzLCJleHAiOjE3MjcxNTY0MzN9.YWPCg1WA70Ny5iAlF8PkZYW7ufSnPVyyCMi6ZnVNMZo" http://localhost:3000/decks/my-decks
+lF8PkZYW7ufSnPVyyCMi6ZnVNMZo" http://localhost:3000/decks/my-decks;2215f02f-7942-43a3-9a39-40adb81b4640Running 5s test @ http://localhost:3000/decks/my-decks
+100 connections with 10 pipelining factor
+
+
+┌─────────┬────────┬────────┬────────┬────────┬───────────┬──────────┬─────────┐ 
+│ Stat    │ 2.5%   │ 50%    │ 97.5%  │ 99%    │ Avg       │ Stdev    │ Max     │ 
+├─────────┼────────┼────────┼────────┼────────┼───────────┼──────────┼─────────┤ 
+│ Latency │ 150 ms │ 169 ms │ 449 ms │ 466 ms │ 194.25 ms │ 81.73 ms │ 4974 ms │ 
+└─────────┴────────┴────────┴────────┴────────┴───────────┴──────────┴─────────┘ 
+┌───────────┬────────┬────────┬─────────┬─────────┬─────────┬──────────┬────────┐
+│ Stat      │ 1%     │ 2.5%   │ 50%     │ 97.5%   │ Avg     │ Stdev    │ Min    │
+├───────────┼────────┼────────┼─────────┼─────────┼─────────┼──────────┼────────┤
+│ Req/Sec   │ 1.904  │ 1.904  │ 5.391   │ 5.591   │ 4.622,4 │ 1.386,63 │ 1.904  │
+├───────────┼────────┼────────┼─────────┼─────────┼─────────┼──────────┼────────┤
+│ Bytes/Sec │ 732 kB │ 732 kB │ 2.09 MB │ 2.29 MB │ 1.83 MB │ 570 kB   │ 731 kB │
+└───────────┴────────┴────────┴─────────┴─────────┴─────────┴──────────┴────────┘
+
+Req/Bytes counts sampled once per second.
+# of samples: 5
+
+2 2xx responses, 23105 non 2xx responses
+24k requests in 5.06s, 9.15 MB read
+
+
+
+===================================================SEM CACHEAMENTO========================================
+$ autocannon -c 100 -d 5 -p 10 -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6IkFkbWluIiwidXNlcklkIjoiNjZmMDU4MTk2ZWI0YTVhYTU3ZTZiMWFiIiwicm9zZSI6ImFkbWluIiwiaWF0IjoxNzI3MTUzMDQ0LCJleHAiOjE3MjcxNTY2NDR9.TP-prEU6-DRBNyub3yEQKJqE4-2BrVt9wSsrMLhbRxs" http://localhost:3000/decks/my-decks
+b3yEQKJqE4-2BrVt9wSsrMLhbRxs" http://localhost:3000/decks/my-decks;2215f02f-7942-43a3-9a39-40adb81b4640Running 5s test @ http://localhost:3000/decks/my-decks
+100 connections with 10 pipelining factor
+
+
+┌─────────┬────────┬────────┬────────┬────────┬───────────┬──────────┬────────┐
+│ Stat    │ 2.5%   │ 50%    │ 97.5%  │ 99%    │ Avg       │ Stdev    │ Max    │
+├─────────┼────────┼────────┼────────┼────────┼───────────┼──────────┼────────┤
+│ Latency │ 165 ms │ 177 ms │ 436 ms │ 455 ms │ 215.69 ms │ 79.69 ms │ 464 ms │
+└─────────┴────────┴────────┴────────┴────────┴───────────┴──────────┴────────┘
+┌───────────┬────────┬────────┬─────────┬─────────┬─────────┬──────────┬────────┐
+│ Stat      │ 1%     │ 2.5%   │ 50%     │ 97.5%   │ Avg     │ Stdev    │ Min    │
+├───────────┼────────┼────────┼─────────┼─────────┼─────────┼──────────┼────────┤
+│ Req/Sec   │ 2.423  │ 2.423  │ 5.435   │ 5.811   │ 4.544,4 │ 1.388,11 │ 2.423  │
+├───────────┼────────┼────────┼─────────┼─────────┼─────────┼──────────┼────────┤
+│ Bytes/Sec │ 929 kB │ 929 kB │ 2.09 MB │ 2.23 MB │ 1.74 MB │ 534 kB   │ 929 kB │
+└───────────┴────────┴────────┴─────────┴─────────┴─────────┴──────────┴────────┘
+
+Req/Bytes counts sampled once per second.
+# of samples: 5
+
+0 2xx responses, 22721 non 2xx responses
+24k requests in 5.06s, 8.72 MB read
+
