@@ -1,3 +1,4 @@
+## [Documentação API Magic](https://documenter.getpostman.com/view/34646430/2sAXqwXzAR)
 <p align="center">
   <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
 </p>
