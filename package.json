@@ -21,15 +21,20 @@
     "autocannon-test": "autocannon -c 100 -d 5 -p 10 http://localhost:3000/decks/my-decks"
   },
   "dependencies": {
+    "@golevelup/nestjs-rabbitmq": "^5.6.1",
     "@nestjs/axios": "^3.0.3",
     "@nestjs/cache-manager": "^2.2.2",
     "@nestjs/common": "^10.4.4",
     "@nestjs/core": "^10.4.4",
     "@nestjs/jwt": "^10.2.0",
+    "@nestjs/microservices": "^10.4.8",
     "@nestjs/mongoose": "^10.0.10",
     "@nestjs/passport": "^10.0.3",
     "@nestjs/platform-express": "^10.4.4",
+    "@nestjs/platform-socket.io": "^10.4.8",
+    "@nestjs/websockets": "^10.4.8",
     "@types/autocannon": "^7.12.5",
+    "amqplib": "^0.10.4",
     "axios": "^1.7.5",
     "bcrypt": "^5.1.1",
     "cache-manager": "^5.7.6",
@@ -41,7 +46,8 @@
     "passport": "^0.7.0",
     "passport-jwt": "^4.0.1",
     "reflect-metadata": "^0.2.0",
-    "rxjs": "^7.8.1"
+    "rxjs": "^7.8.1",
+    "socket.io": "^4.8.1"
   },
   "devDependencies": {
     "@nestjs/cli": "^10.0.0",
